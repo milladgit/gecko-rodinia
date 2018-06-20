@@ -20,6 +20,10 @@ double chip_width = 0.016;
 /* ambient temperature, assuming no package at all	*/
 double amb_temp = 80.0;
 
+static char *exec_loc = "LocB";
+static char *exec_policy_chosen = "static";
+
+
 /* Single iteration of the transient solver in the grid model.
  * advances the solution of the discretized difference equations 
  * by one time step
@@ -31,6 +35,7 @@ void single_iteration(double *result, double *temp, double *power, int row, int 
 	double delta;
 	int r, c;
 
+	#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(temp,power,result)
 	#pragma acc parallel loop present(temp, power, result)
 	for (r = 0; r < row; r++) {
 		#pragma acc loop
@@ -97,7 +102,12 @@ void single_iteration(double *result, double *temp, double *power, int row, int 
 
 		}
 	}
+	#pragma gecko region end
 
+        #pragma gecko region pause at(exec_loc)
+
+
+	#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(temp,power,result)
 	#pragma acc parallel loop present(temp, result)
 	for (r = 0; r < row; r++) {
 		#pragma acc loop
@@ -105,6 +115,9 @@ void single_iteration(double *result, double *temp, double *power, int row, int 
 			temp[r*col+c]=result[r*col+c];
 		}
 	}
+	#pragma gecko region end
+
+	#pragma gecko region pause at(exec_loc)
 }
 
 /* Transient solver driver routine: simply converts the heat 
@@ -133,8 +146,8 @@ void compute_tran_temp(double *result, int num_iterations, double *temp, double 
 	fprintf(stdout, "Rx: %g\tRy: %g\tRz: %g\tCap: %g\n", Rx, Ry, Rz, Cap);
 	#endif
 
-	#pragma acc data create(result[0:row*col]) \
-		copyin(power[0:row*col]) copy(temp[0:row*col])
+//	#pragma acc data create(result[0:row*col]) \
+//		copyin(power[0:row*col]) copy(temp[0:row*col])
 	{
     for (int i = 0; i < num_iterations ; i++)
 	{
@@ -206,11 +219,16 @@ int main(int argc, char **argv)
 		usage(argc, argv);
 
 	/* allocate memory for the temperature and power arrays	*/
-	temp = (double *) calloc (grid_rows * grid_cols, sizeof(double));
-	power = (double *) calloc (grid_rows * grid_cols, sizeof(double));
-	result = (double *) calloc (grid_rows * grid_cols, sizeof(double));
-	if(!temp || !power)
-		fatal("unable to allocate memory");
+//	temp = (double *) calloc (grid_rows * grid_cols, sizeof(double));
+//	power = (double *) calloc (grid_rows * grid_cols, sizeof(double));
+//	result = (double *) calloc (grid_rows * grid_cols, sizeof(double));
+//	if(!temp || !power)
+//		fatal("unable to allocate memory");
+
+	#pragma  gecko config file
+	#pragma gecko memory allocate(result[0:grid_rows*grid_cols]) type(double) location(exec_loc)
+	#pragma gecko memory allocate(power[0:grid_rows*grid_cols]) type(double) location(exec_loc)
+	#pragma gecko memory allocate(temp[0:grid_rows*grid_cols]) type(double) location(exec_loc)
 
 	/* read initial temperatures and input power	*/
 	tfile = argv[4];
@@ -231,9 +249,13 @@ int main(int argc, char **argv)
 	fprintf(stdout, "%d\t%g\n", i, temp[i]);
 #endif
 	/* cleanup	*/
-	free(temp);
-	free(power);
+//	free(temp);
+//	free(power);
+
+#pragma gecko memory free(temp)
+#pragma gecko memory free(power)
 
 	return 0;
 }
+
 
