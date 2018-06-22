@@ -17,7 +17,9 @@ struct double3 { double x, y, z; };
  *
  */
 #define GAMMA 1.4
-#define iterations 2000
+#ifndef iterations
+#define iterations 1
+#endif
 
 #define NDIM 3
 #define NNB 4
@@ -53,7 +55,7 @@ void dealloc(T* array)
 template <typename T>
 void copy(T* dst, T* src, int N)
 {
-	#pragma acc kernels present_or_copyin(src) present_or_create(dst)
+	#pragma acc kernels present_or_copyin(src[0:N]) present_or_create(dst[0:N])
 	for(int i = 0; i < N; i++)
 	{
 		dst[i] = src[i];

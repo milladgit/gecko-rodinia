@@ -1,6 +1,6 @@
 #include "find_ellipse.h"
 #include "track_ellipse.h"
-
+#include <openacc.h>
 
 // Temporal variable for computing
 float *gicov_mem = NULL;
@@ -11,6 +11,11 @@ const int radius = 12;
 const int strel_m = radius * 2 + 1;
 const int strel_n = radius * 2 + 1;
 
+
+void choose_GPU() {
+	acc_init();
+	acc_set_device_num(0, acc_device_nvidia);
+}
 
 // Main
 int main(int argc, char ** argv) {

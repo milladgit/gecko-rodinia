@@ -82,14 +82,17 @@ void compute_constants() {
 	int i, j, n, k;
 	// Compute the sine and cosine of the angle to each point in each sample circle
 	//  (which are the same across all sample circles)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(theta,sin_angle,cos_angle)
 	#pragma acc kernels
 	for(n = 0; n < NPOINTS; n++) {
 		theta[n] = (((double) n) * 2.0 * PI) / ((double) NPOINTS);
 		sin_angle[n] = sin(theta[n]);
 		cos_angle[n] = cos(theta[n]);
 	}
+#pragma gecko region end
 
 	// Compute the (x,y) pixel offsets of each sample point in each sample circle
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(tX,tY,theta)
 	#pragma acc kernels
 	for (k = 0; k < NCIRCLES; k++) {
 		double rad = (double) (MIN_RAD + (2 * k)); 
@@ -98,8 +101,10 @@ void compute_constants() {
 			tY[(k * NPOINTS) + n] = (int)(sin(theta[n]) * rad);
 		}
 	}
-	
+#pragma gecko region end
+
 	// Compute the structuring element used in dilation
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(strel)
 	#pragma acc kernels
 	for (i = 0; i < strel_m; i++) {
 		for (j = 0; j < strel_n; j++) {
@@ -109,6 +114,7 @@ void compute_constants() {
 				strel[(i * strel_m) + j] = 0.0;
 		}
 	}
+#pragma gecko region end
 }
 
 
@@ -137,7 +143,7 @@ MAT *GICOV(MAT *mat_grad_x, MAT *mat_grad_y) {
 	#pragma acc data copyin(grad_x[0:grad_m*grad_n],grad_y[0:grad_m*grad_n])
 	gicov_kernel(grad_m, grad_n, grad_x, grad_y, gicov_mem);
 
-	#pragma acc update host(gicov_mem[0:grad_m*grad_n])
+//	#pragma acc update host(gicov_mem[0:grad_m*grad_n])
 
 	// Copy the results into a new host matrix
 	MAT *mat_gicov = m_get(grad_m, grad_n);

@@ -76,7 +76,8 @@ kernel_cpu(	int cores_arg,
 	int i;
 
 	// process number of querries
-	#pragma acc kernels
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(records,knodes,currKnode,offset,keys,ans)
+	#pragma acc kernels present(records,knodes,currKnode,offset,keys,ans)
 	for(bid = 0; bid < count; bid++){
 
 		// process levels of the tree
@@ -98,8 +99,10 @@ kernel_cpu(	int cores_arg,
 			}
 		}
 	}
+#pragma gecko region end
 
-	#pragma acc kernels
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(records,knodes,currKnode,offset,keys,ans)
+	#pragma acc kernels present(records,knodes,currKnode,offset,keys,ans)
 	for(bid = 0; bid < count; bid++){
 
 		// process levels of the tree
@@ -110,8 +113,10 @@ kernel_cpu(	int cores_arg,
 
 		}
 	}
+#pragma gecko region end
 
-	#pragma acc kernels
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(records,knodes,currKnode,offset,keys,ans)
+	#pragma acc kernels present(records,knodes,currKnode,offset,keys,ans)
 	for(bid = 0; bid < count; bid++){
 
 		//At this point, we have a candidate leaf node which may contain
@@ -126,6 +131,8 @@ kernel_cpu(	int cores_arg,
 		}
 
 	}
+#pragma gecko region end
+
 
 	time2 = get_time();
 

@@ -1,6 +1,10 @@
-C_C = pgcc
+C_C = pgc++
 #OMP_LIB = -lgomp
-ACC_FLAG = -acc -Minfo
+ACC_FLAG = -w -mp -acc -ta=tesla -Minfo=accel  -std=c++11 -Mcuda
+
+ACC_FLAG += -I$(GECKO_HOME)/ -L$(GECKO_HOME)/lib
+CC_LIB = -lgecko
+
 
 # ========================================================================================================================================================================================================200
 #	EXECUTABLES (LINK OBJECTS TOGETHER INTO BINARY)
@@ -11,14 +15,14 @@ b+tree.out:	./main.o \
 		./kernel/kernel_cpu_2.o \
 		./util/timer/timer.o \
 		./util/num/num.o
-	$(C_C)	./main.o \
+	$(C_C)	$(ACC_FLAG) \
+			./main.o \
 			./kernel/kernel_cpu.o \
 			./kernel/kernel_cpu_2.o \
 			./util/timer/timer.o \
 			./util/num/num.o \
-			$(ACC_FLAG) \
 			-lm \
-			-o b+tree.out
+			-o b+tree.out $(CC_LIB)
 # ========================================================================================================================================================================================================200
 #	OBJECTS (COMPILE SOURCE FILES INTO OBJECTS)
 # ========================================================================================================================================================================================================200
@@ -30,11 +34,12 @@ b+tree.out:	./main.o \
 main.o:	./common.h \
 		./main.h \
 		./main.c
-	$(C_C)	./main.c \
+	$(C_C)	$(ACC_FLAG) \
+			./main.c \
 			-c \
 			-o ./main.o \
-			$(ACC_FLAG) \
-			-O3
+			-O3 \
+			$(CC_LIB)
 
 # ======================================================================================================================================================150
 #	KERNELS
@@ -43,20 +48,22 @@ main.o:	./common.h \
 ./kernel/kernel_cpu.o:	./common.h \
 						./kernel/kernel_cpu.h \
 						./kernel/kernel_cpu.c
-	$(C_C)	./kernel/kernel_cpu.c \
+	$(C_C)	$(ACC_FLAG) \
+			./kernel/kernel_cpu.c \
 			-c \
 			-o ./kernel/kernel_cpu.o \
 			-O3 \
-			$(ACC_FLAG)
+			$(CC_LIB)
 
 ./kernel/kernel_cpu_2.o:./common.h \
 						./kernel/kernel_cpu_2.h \
 						./kernel/kernel_cpu_2.c
-	$(C_C)	./kernel/kernel_cpu_2.c \
+	$(C_C)	$(ACC_FLAG) \
+			./kernel/kernel_cpu_2.c \
 			-c \
 			-o ./kernel/kernel_cpu_2.o \
 			-O3 \
-			$(ACC_FLAG)
+			$(CC_LIB)
 
 # ======================================================================================================================================================150
 #	UTILITIES
@@ -65,20 +72,22 @@ main.o:	./common.h \
 ./util/timer/timer.o:	./common.h \
 						./util/timer/timer.h \
 						./util/timer/timer.c
-	$(C_C)	./util/timer/timer.c \
+	$(C_C)	$(ACC_FLAG) \
+			./util/timer/timer.c \
 			-c \
 			-o ./util/timer/timer.o \
 			-O3 \
-			$(ACC_FLAG)
+			$(CC_LIB)
 
 ./util/num/num.o:	./common.h \
 					./util/num/num.h \
 					./util/num/num.c
-	$(C_C)	./util/num/num.c \
+	$(C_C)	$(ACC_FLAG) \
+			./util/num/num.c \
 			-c \
 			-o ./util/num/num.o \
 			-O3 \
-			$(ACC_FLAG)
+			$(CC_LIB)
 
 # ======================================================================================================================================================150
 #	END
@@ -89,11 +98,11 @@ main.o:	./common.h \
 # ========================================================================================================================================================================================================200
 
 clean:
-	rm	*.o *.out \
-		./kernel/*.o \
-		./util/timer/*.o \
-		./util/num/*.o \
-                output.txt
+	rm -rf	*.o *.out \
+			./kernel/*.o \
+			./util/timer/*.o \
+			./util/num/*.o \
+			output.txt
 
 # ========================================================================================================================================================================================================200
 #	END

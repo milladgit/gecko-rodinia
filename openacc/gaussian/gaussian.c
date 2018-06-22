@@ -37,13 +37,21 @@ void PrintAry(float *ary, int ary_size);
 
 unsigned int totalKernelTime = 0;
 
+
+static char *exec_loc = "LocB";
+static char *exec_policy_chosen = "static";
+
+
 int main(int argc, char *argv[])
 {
     struct timeval time_start;
     struct timeval time_end;
     unsigned int time_total;
 
-    int verbose = 1;
+#pragma gecko config env
+
+
+	int verbose = 0;
     if (argc < 2) {
         printf("Usage: gaussian matrix.txt [-q]\n\n");
         printf("-q (quiet) suppresses printing the matrix and result values.\n");
@@ -106,10 +114,14 @@ int main(int argc, char *argv[])
     
     /*printf("%d,%d\n",size,time_total);
     fprintf(stderr,"%d,%d\n",size,time_total);*/
-    
-    free(m);
-    free(a);
-    free(b);
+
+#pragma gecko memory free(m)
+#pragma gecko memory free(a)
+#pragma gecko memory free(b)
+
+//    free(m);
+//    free(a);
+//    free(b);
 }
 
  
@@ -133,18 +145,21 @@ void InitProblemOnce(char *filename)
 	
 	fscanf(fp, "%d", &Size);	
 	 
-	a = (float *) malloc(Size * Size * sizeof(float));
-	 
+//	a = (float *) malloc(Size * Size * sizeof(float));
+#pragma gecko memory allocate(a[0:Size*Size]) type(float) location(exec_loc)
+
 	InitMat(a, Size, Size);
 	//printf("The input matrix a is:\n");
 	//PrintMat(a, Size, Size);
-	b = (float *) malloc(Size * sizeof(float));
-	
+//	b = (float *) malloc(Size * sizeof(float));
+#pragma gecko memory allocate(b[0:Size]) type(float) location(exec_loc)
+
 	InitAry(b, Size);
 	//printf("The input array b is:\n");
 	//PrintAry(b, Size);
 		
-	 m = (float *) malloc(Size * Size * sizeof(float));
+//	 m = (float *) malloc(Size * Size * sizeof(float));
+#pragma gecko memory allocate(m[0:Size*Size]) type(float) location(exec_loc)
 }
 
 /*------------------------------------------------------
@@ -171,9 +186,11 @@ void InitPerRun(float *m)
 void Fan1(float *m, float *a, int Size, int t)
 {   
 	int i;
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(m,a)
 	#pragma acc parallel loop present(m,a)
 	for (i=0; i<Size-1-t; i++)
 		m[Size*(i+t+1)+t] = a[Size*(i+t+1)+t] / a[Size*t+t];
+#pragma gecko region end
 }
 
 /*-------------------------------------------------------
@@ -184,15 +201,20 @@ void Fan1(float *m, float *a, int Size, int t)
 void Fan2(float *m, float *a, float *b,int Size, int j1, int t)
 {
 	int i,j;
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(m,a)
 	#pragma acc parallel loop present(m,a)
 	for (i=0; i<Size-1-t; i++) {
 	    #pragma acc loop
 		for (j=0; j<Size-t; j++)
 			a[Size*(i+1+t)+(j+t)] -= m[Size*(i+1+t)+t] * a[Size*t+(j+t)];
 	}
+#pragma gecko region end
+
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(m,b)
 	#pragma acc parallel loop present(m,b)
 	for (i=0; i<Size-1-t; i++)
 		b[i+1+t] -= m[Size*(i+1+t)+t] * b[t];
+#pragma gecko region end
 }
 
 /*------------------------------------------------------
@@ -204,7 +226,7 @@ void ForwardSub()
 {
 	int t;
 
-#pragma acc data copy(m[0:Size*Size],a[0:Size*Size],b[0:Size])
+//#pragma acc data copy(m[0:Size*Size],a[0:Size*Size],b[0:Size])
 {
     // begin timing kernels
     struct timeval time_start;
@@ -214,6 +236,8 @@ void ForwardSub()
 		Fan1(m,a,Size,t);
 		Fan2(m,a,b,Size,Size-t,t);
 	}
+    
+#pragma gecko region pause at(exec_loc)
 
 	// end timing kernels
 	struct timeval time_end;

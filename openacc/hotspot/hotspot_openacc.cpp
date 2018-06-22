@@ -104,8 +104,6 @@ void single_iteration(double *result, double *temp, double *power, int row, int 
 	}
 	#pragma gecko region end
 
-        #pragma gecko region pause at(exec_loc)
-
 
 	#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(temp,power,result)
 	#pragma acc parallel loop present(temp, result)
@@ -225,7 +223,8 @@ int main(int argc, char **argv)
 //	if(!temp || !power)
 //		fatal("unable to allocate memory");
 
-	#pragma  gecko config file
+	#pragma gecko config env
+
 	#pragma gecko memory allocate(result[0:grid_rows*grid_cols]) type(double) location(exec_loc)
 	#pragma gecko memory allocate(power[0:grid_rows*grid_cols]) type(double) location(exec_loc)
 	#pragma gecko memory allocate(temp[0:grid_rows*grid_cols]) type(double) location(exec_loc)

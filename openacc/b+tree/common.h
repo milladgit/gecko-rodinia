@@ -25,6 +25,12 @@
 
 #define Version "1.5"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
+static char *exec_loc = "LocB";
+static char *exec_policy_chosen = "static";
+
 #ifdef WINDOWS
 	#define bool char
 	#define false 0

@@ -654,7 +654,9 @@ transform_to_cuda(	node * root,
 	gettimeofday (&one, NULL);
 	long max_nodes = (long)(pow(order,log(size)/log(order/2.0)-1) + 1);
 	malloc_size = size*sizeof(record) + max_nodes*sizeof(knode); 
-	mem = (char*)malloc(malloc_size);
+//	mem = (char*)malloc(malloc_size);
+#pragma gecko memory allocate(mem[0:malloc_size]) type(char) location(exec_loc)
+
 	if(mem==NULL){
 		printf("Initial malloc error\n");
 		exit(1);
@@ -1854,6 +1856,8 @@ main(	int argc,
 	char *output="output.txt";
 	FILE * pFile;
 
+#pragma gecko config env
+
 
 	// go through arguments
 	for(cur_arg=1; cur_arg<argc; cur_arg++){
@@ -1947,7 +1951,7 @@ main(	int argc,
 
      pFile = fopen (output,"w+");
      if (pFile==NULL) 
-       fputs ("Fail to open %s !\n",output);
+       fprintf (stderr,"Fail to open %s !\n",output);
      fprintf(pFile,"******starting******\n");
      fclose(pFile);
 
@@ -2156,18 +2160,25 @@ main(	int argc,
 
 				// INPUT: knodes CPU allocation (setting pointer in mem variable)
 				knode *knodes = (knode *)((long)mem + (long)rootLoc);
+
 				long knodes_elem = ((long)(mem_used) - (long)rootLoc) / sizeof(knode);
 				long knodes_mem = (long)(mem_used) - (long)rootLoc;
 				// printf("knodes_elem=%d, knodes_unit_mem=%d, knodes_mem=%d\n", (int)knodes_elem, sizeof(knode), (int)knodes_mem);
 
 				// INPUT: currKnode CPU allocation, initialize in GPU
-				long *currKnode = (long *)malloc(count*sizeof(long));
+//				long *currKnode = (long *)malloc(count*sizeof(long));
+				long *currKnode;
+#pragma gecko memory allocate(currKnode[0:count]) type(long) location(exec_loc)
 
 				// INPUT: offset CPU allocation, initialize in GPU
-				long *offset = (long *)malloc(count*sizeof(long));
+//				long *offset = (long *)malloc(count*sizeof(long));
+				long *offset;
+#pragma gecko memory allocate(offset[0:count]) type(long) location(exec_loc)
 
 				// INPUT: keys CPU allocation
-				int *keys = (int *)malloc(count*sizeof(int));
+//				int *keys = (int *)malloc(count*sizeof(int));
+				int *keys;
+#pragma gecko memory allocate(keys[0:count]) type(int) location(exec_loc)
 				// INPUT: keys CPU initialization
 				int i;
 				for(i = 0; i < count; i++){
@@ -2175,24 +2186,31 @@ main(	int argc,
 				}
 
 				// OUTPUT: ans CPU allocation, initialize in GPU
-				record *ans = (record *)malloc(sizeof(record)*count);
+//				record *ans = (record *)malloc(sizeof(record)*count);
+				record *ans;
+#pragma gecko memory allocate(ans[0:count]) type(record) location(exec_loc)
 
-#pragma acc data create(currKnode[0:count],offset[0:count],ans[0:count]) \
-        create(keys[0:count],records[0:records_elem],knodes[0:knodes_elem]) \
-        copyout(ans[0:count])
+
+//#pragma acc data create(currKnode[0:count],offset[0:count],ans[0:count]) \
+//        create(keys[0:count],records[0:records_elem],knodes[0:knodes_elem]) \
+//        copyout(ans[0:count])
 {
-        #pragma acc update device(keys[0:count],records[0:records_elem],knodes[0:knodes_elem]) \
-            async(TRANSFER_KERNEL_DATA)
+//        #pragma acc update device(keys[0:count],records[0:records_elem],knodes[0:knodes_elem]) \
+//            async(TRANSFER_KERNEL_DATA)
 
         // Allocate variable in device and initialize
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(currKnode,offset,ans)
         #pragma acc parallel loop
         for(i = 0; i < count; i++) {
           currKnode[i] = 0;
           offset[i] = 0;
           ans[i].value = -1;
         }
+#pragma gecko region end
 
-        #pragma acc wait(TRANSFER_KERNEL_DATA)
+//        #pragma acc wait(TRANSFER_KERNEL_DATA)
+#pragma gecko region pause at(exec_loc)
+
 				// New OpenACC kernel, same algorighm across all versions(OpenMP, CUDA, OpenCL) for comparison purposes
 				kernel_cpu(	cores_arg,
 
@@ -2210,6 +2228,9 @@ main(	int argc,
 							ans);
 } /* end pragma acc data */
 
+#pragma gecko region pause at(exec_loc)
+
+
 				// Original OpenMP kernel, different algorithm
 				// int j;
 				// for(j = 0; j < count; j++){
@@ -2219,11 +2240,10 @@ main(	int argc,
 							// false);				// bool
 				// }
 
-
 				pFile = fopen (output,"aw+");
 				if (pFile==NULL)
 				  {
-				    fputs ("Fail to open %s !\n",output);
+                      fprintf (stderr,"Fail to open %s !\n",output);
 				  }
 				
 				fprintf(pFile,"\n ******command: k count=%d \n",count);
@@ -2232,12 +2252,15 @@ main(	int argc,
 				}
 				fprintf(pFile, " \n");
                                 fclose(pFile);
-
 				// free memory
-				free(currKnode);
-				free(offset);
-				free(keys);
-				free(ans);
+//				free(currKnode);
+//				free(offset);
+//				free(keys);
+//				free(ans);
+#pragma gecko memory free(currKnode)
+#pragma gecko memory free(offset)
+#pragma gecko memory free(keys)
+#pragma gecko memory free(ans)
 
 				// break out of case
 				break;
@@ -2299,20 +2322,34 @@ main(	int argc,
 				// printf("knodes_elem=%d, knodes_unit_mem=%d, knodes_mem=%d\n", (int)knodes_elem, sizeof(knode), (int)knodes_mem);
 
 				// INPUT: currKnode CPU allocation, initialize in GPU
-				long *currKnode = (long *)malloc(count*sizeof(long));
+//				long *currKnode = (long *)malloc(count*sizeof(long));
+				long *currKnode;
+#pragma gecko memory allocate(currKnode[0:count]) type(long) location(exec_loc)
 
 				// INPUT: offset CPU allocation, initialize in GPU
-				long *offset = (long *)malloc(count*sizeof(long));
+//				long *offset = (long *)malloc(count*sizeof(long));
+				long *offset;
+#pragma gecko memory allocate(offset[0:count]) type(long) location(exec_loc)
 
 				// INPUT: lastKnode CPU allocation, initialize in GPU
-				long *lastKnode = (long *)malloc(count*sizeof(long));
+//				long *lastKnode = (long *)malloc(count*sizeof(long));
+				long *lastKnode;
+#pragma gecko memory allocate(lastKnode[0:count]) type(long) location(exec_loc)
 
 				// INPUT: offset_2 CPU allocation, initialize in GPU
-				long *offset_2 = (long *)malloc(count*sizeof(long));
+//				long *offset_2 = (long *)malloc(count*sizeof(long));
+				long *offset_2;
+#pragma gecko memory allocate(offset_2[0:count]) type(long) location(exec_loc)
 
 				// INPUT: start, end CPU allocation
-				int *start = (int *)malloc(count*sizeof(int));
-				int *end = (int *)malloc(count*sizeof(int));
+//				int *start = (int *)malloc(count*sizeof(int));
+				int *start;
+#pragma gecko memory allocate(start[0:count]) type(int) location(exec_loc)
+
+//				int *end = (int *)malloc(count*sizeof(int));
+				int *end;
+#pragma gecko memory allocate(end[0:count]) type(int) location(exec_loc)
+
 				// INPUT: start, end CPU initialization
 				int i;
 				for(i = 0; i < count; i++){
@@ -2325,18 +2362,23 @@ main(	int argc,
 				}
 
 				// INPUT, OUTPUT: recstart, reclenght CPU allocation
-				int *recstart = (int *)malloc(count*sizeof(int));
-				int *reclength = (int *)malloc(count*sizeof(int));
+//				int *recstart = (int *)malloc(count*sizeof(int));
+				int *recstart;
+#pragma gecko memory allocate(recstart[0:count]) type(int) location(exec_loc)
+//				int *reclength = (int *)malloc(count*sizeof(int));
+				int *reclength;
+#pragma gecko memory allocate(reclength[0:count]) type(int) location(exec_loc)
 
-#pragma acc data create(currKnode[0:count],offset[0:count]) \
-    create(start[0:count],end[0:count]) \
-    create(lastKnode[0:count],offset_2[0:count]) \
-    copyout(recstart[0:count],reclength[0:count])
+//#pragma acc data create(currKnode[0:count],offset[0:count]) \
+//    create(start[0:count],end[0:count]) \
+//    create(lastKnode[0:count],offset_2[0:count]) \
+//    copyout(recstart[0:count],reclength[0:count])
 {
-        #pragma acc update device(start[0:count],end[0:count]) \
-            async(TRANSFER_KERNEL_DATA)
+//        #pragma acc update device(start[0:count],end[0:count]) \
+//            async(TRANSFER_KERNEL_DATA)
 
         // Allocate variable in device and initialize
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(currKnode,offset,lastKnode,offset_2,recstart,reclength)
         #pragma acc parallel loop
         for(i = 0; i < count; i++){
           currKnode[i] = 0;
@@ -2346,9 +2388,11 @@ main(	int argc,
           recstart[i] = 0;
           reclength[i] = 0;
         }
+#pragma gecko region end
 
-        #pragma acc wait(TRANSFER_KERNEL_DATA)
-        
+//        #pragma acc wait(TRANSFER_KERNEL_DATA)
+#pragma gecko region pause at(exec_loc)
+
 				// New kernel, same algorighm across all versions(OpenMP, CUDA, OpenCL) for comparison purposes
 				kernel_cpu_2(	cores_arg,
 
@@ -2369,6 +2413,8 @@ main(	int argc,
 								reclength);
 } /* end pragma acc data */
 
+#pragma gecko region pause at(exec_loc)
+
 				// Original [CPU] kernel, different algorithm
 				// int k;
 				// for(k = 0; k < count; k++){
@@ -2380,7 +2426,7 @@ main(	int argc,
 				pFile = fopen (output,"aw+");
 				if (pFile==NULL)
 				  {
-				    fputs ("Fail to open %s !\n",output);
+                      fprintf (stderr,"Fail to open %s !\n",output);
 				  }
 
 				fprintf(pFile,"\n******command: j count=%d, rSize=%d \n",count, rSize);				
@@ -2391,14 +2437,22 @@ main(	int argc,
                                 fclose(pFile);
 
 				// free memory
-				free(currKnode);
-				free(offset);
-				free(lastKnode);
-				free(offset_2);
-				free(start);
-				free(end);
-				free(recstart);
-				free(reclength);
+//				free(currKnode);
+//				free(offset);
+//				free(lastKnode);
+//				free(offset_2);
+//				free(start);
+//				free(end);
+//				free(recstart);
+//				free(reclength);
+#pragma gecko memory free(currKnode)
+#pragma gecko memory free(offset)
+#pragma gecko memory free(lastKnode)
+#pragma gecko memory free(offset_2)
+#pragma gecko memory free(start)
+#pragma gecko memory free(end)
+#pragma gecko memory free(recstart)
+#pragma gecko memory free(reclength)
 
 				// break out of case
 				break;
@@ -2427,7 +2481,7 @@ main(	int argc,
 	// free remaining memory and exit
 	// ------------------------------------------------------------60
 
-	free(mem);
+#pragma gecko memory free(mem)
 	return EXIT_SUCCESS;
 
 }

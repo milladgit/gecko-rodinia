@@ -9,6 +9,10 @@ int no_of_nodes;
 int edge_list_size;
 FILE *fp;
 
+static char *exec_loc = "LocB";
+static char *exec_policy_chosen = "static";
+
+
 //Structure to hold a node information
 struct Node
 {
@@ -28,6 +32,8 @@ fprintf(stderr,"Usage: %s <input_file>\n", argv[0]);
 ////////////////////////////////////////////////////////////////////////////////
 int main( int argc, char** argv) 
 {
+#pragma gecko config env
+
 	no_of_nodes=0;
 	edge_list_size=0;
 	BFSGraph( argc, argv);
@@ -42,7 +48,7 @@ void BFSGraph( int argc, char** argv)
 {
     char *input_f;
 
-    int* h_cost;
+    // int* h_cost;
     int* h_graph_edges;
 	
 	if(argc!=2){
@@ -66,10 +72,23 @@ void BFSGraph( int argc, char** argv)
 	fscanf(fp,"%d",&no_of_nodes);
    
 	// allocate host memory
-	Node* h_graph_nodes = (Node*) malloc(sizeof(Node)*no_of_nodes);
-	bool *h_graph_mask = (bool*) malloc(sizeof(bool)*no_of_nodes);
-	bool *h_updating_graph_mask = (bool*) malloc(sizeof(bool)*no_of_nodes);
-	bool *h_graph_visited = (bool*) malloc(sizeof(bool)*no_of_nodes);
+//	Node* h_graph_nodes = (Node*) malloc(sizeof(Node)*no_of_nodes);
+//	bool *h_graph_mask = (bool*) malloc(sizeof(bool)*no_of_nodes);
+//	bool *h_updating_graph_mask = (bool*) malloc(sizeof(bool)*no_of_nodes);
+//	bool *h_graph_visited = (bool*) malloc(sizeof(bool)*no_of_nodes);
+//	int  *h_cost = (int*) malloc(sizeof(int)*no_of_nodes);
+
+	Node* h_graph_nodes;
+	bool *h_graph_mask;
+	bool *h_updating_graph_mask;
+	bool *h_graph_visited;
+	int  *h_cost;
+
+#pragma gecko memory allocate(h_graph_nodes[0:no_of_nodes]) type(Node) location(exec_loc)
+#pragma gecko memory allocate(h_graph_mask[0:no_of_nodes]) type(bool) location(exec_loc)
+#pragma gecko memory allocate(h_updating_graph_mask[0:no_of_nodes]) type(bool) location(exec_loc)
+#pragma gecko memory allocate(h_graph_visited[0:no_of_nodes]) type(bool) location(exec_loc)
+#pragma gecko memory allocate(h_cost[0:no_of_nodes]) type(int) location(exec_loc)
 
 	int start, edgeno;   
 	// initalize the memory
@@ -87,7 +106,8 @@ void BFSGraph( int argc, char** argv)
 	fscanf(fp,"%d",&edge_list_size);
 	
 	int id,cost;
-	h_graph_edges = (int*) malloc(sizeof(int)*edge_list_size);
+//	h_graph_edges = (int*) malloc(sizeof(int)*edge_list_size);
+#pragma gecko memory allocate(h_graph_edges[0:edge_list_size]) type(int) location(exec_loc)
 	for(int i=0; i < edge_list_size ; i++)
 	{
 		fscanf(fp,"%d",&id);
@@ -98,13 +118,14 @@ void BFSGraph( int argc, char** argv)
 	if(fp)
 		fclose(fp); 
 
-#pragma acc data create(h_updating_graph_mask[0:no_of_nodes]) \
-	create(h_graph_mask[0:no_of_nodes],h_graph_visited[0:no_of_nodes]) \
-	create(h_graph_nodes[0:no_of_nodes], h_graph_edges[0:edge_list_size]) \
-	copyout(h_cost[0:no_of_nodes])
+//#pragma acc data create(h_updating_graph_mask[0:no_of_nodes]) \
+//	create(h_graph_mask[0:no_of_nodes],h_graph_visited[0:no_of_nodes]) \
+//	create(h_graph_nodes[0:no_of_nodes], h_graph_edges[0:edge_list_size]) \
+//	copyout(h_cost[0:no_of_nodes])
 {
-	#pragma acc update device(h_graph_nodes[0:no_of_nodes]) async(TRANSFER_GRAPH_NODE)
+//	#pragma acc update device(h_graph_nodes[0:no_of_nodes]) async(TRANSFER_GRAPH_NODE)
 
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_updating_graph_mask,h_graph_mask,h_graph_visited)
 	#pragma acc parallel loop
 	for( unsigned int i = 0; i < no_of_nodes; i++)
 	{
@@ -112,25 +133,34 @@ void BFSGraph( int argc, char** argv)
 		h_graph_mask[i]=false;
 		h_graph_visited[i]=false;
 	}
-	
-	#pragma acc kernels present(h_graph_mask[0:no_of_nodes],h_graph_visited[0:no_of_nodes])
+#pragma gecko region end
+
+
+#pragma gecko region at(exec_loc) exec_pol("any") variable_list(h_updating_graph_mask,h_graph_mask,h_graph_visited)
+	#pragma acc kernels num_gangs(1) vector_length(1) present(h_graph_mask[0:no_of_nodes],h_graph_visited[0:no_of_nodes])
+	for(int i=0;i<1;i++)
 	{
 	    //set the source node as true in the mask
 	    h_graph_mask[source]=true;
 		h_graph_visited[source]=true;
 	}
+#pragma gecko region end
 
 	// allocate mem for the result on host side
-	h_cost = (int*) malloc( sizeof(int)*no_of_nodes);
+	// h_cost = (int*) malloc( sizeof(int)*no_of_nodes);
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_cost)
 	#pragma acc parallel loop
 	for(int i=0;i<no_of_nodes;i++) {
 		h_cost[i]=-1;
 		if(i == source) h_cost[source]=0;
 	}
-	
+#pragma gecko region end
+
 	// finish transfer node and edge to target
-	#pragma acc update device(h_graph_edges[0:edge_list_size])
-	#pragma acc wait(TRANSFER_GRAPH_NODE)
+//	#pragma acc update device(h_graph_edges[0:edge_list_size])
+//	#pragma acc wait(TRANSFER_GRAPH_NODE)
+#pragma gecko region pause at(exec_loc)
+
 
 	printf("Start traversing the tree\n");
 
@@ -142,6 +172,7 @@ void BFSGraph( int argc, char** argv)
 		//if no thread changes this value then the loop stops
 		stop=false;
 
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_graph_mask,h_cost,h_graph_nodes,h_graph_visited,h_updating_graph_mask,h_graph_edges)
 		#pragma acc parallel loop
 		for(int tid = 0; tid < no_of_nodes; tid++ )
 		{
@@ -158,7 +189,9 @@ void BFSGraph( int argc, char** argv)
 				}
 			}
 		}
+#pragma gecko region end
 
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_graph_mask,h_cost,h_graph_nodes,h_graph_visited,h_updating_graph_mask)
 		#pragma acc parallel loop vector reduction(||:stop)
   		for(int tid=0; tid< no_of_nodes ; tid++ )
 		{
@@ -169,11 +202,15 @@ void BFSGraph( int argc, char** argv)
 			h_updating_graph_mask[tid]=false;
 			}
 		}
+#pragma gecko region end
+
 		k++;
 	}
 	while(stop);
 
 } /* end acc data */
+
+#pragma gecko region pause at(exec_loc)
 
 	//Store the result into a file
 	FILE *fpo = fopen("result.txt","w");
@@ -184,12 +221,19 @@ void BFSGraph( int argc, char** argv)
 
 
 	// cleanup memory
-	free( h_graph_nodes);
-	free( h_graph_edges);
-	free( h_graph_mask);
-	free( h_updating_graph_mask);
-	free( h_graph_visited);
-	free( h_cost);
+//	free( h_graph_nodes);
+//	free( h_graph_edges);
+//	free( h_graph_mask);
+//	free( h_updating_graph_mask);
+//	free( h_graph_visited);
+//	free( h_cost);
+
+#pragma gecko memory free(h_graph_nodes)
+#pragma gecko memory free(h_graph_edges)
+#pragma gecko memory free(h_graph_mask)
+#pragma gecko memory free(h_updating_graph_mask)
+#pragma gecko memory free(h_graph_visited)
+#pragma gecko memory free(h_cost)
 
 }
 

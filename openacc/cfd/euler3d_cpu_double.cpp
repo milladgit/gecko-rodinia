@@ -16,7 +16,9 @@ struct double3 { double x, y, z; };
  *
  */
 #define GAMMA 1.4
-#define iterations 2000
+#ifndef iterations
+#define iterations 1
+#endif
 
 #define NDIM 3
 #define NNB 4
@@ -34,29 +36,39 @@ struct double3 { double x, y, z; };
 #define NVAR (VAR_DENSITY_ENERGY+1)
 
 
+static char *exec_loc = "LocB";
+static char *exec_policy_chosen = "static";
+
+
 /*
  * Generic functions
  */
 template <typename T>
 T* alloc(int N)
 {
-	return new T[N];
+//	return new T[N];
+	T* p;
+#pragma gecko memory allocate(p[0:N]) type(T) location(exec_loc)
+	return p;
 }
 
 template <typename T>
 void dealloc(T* array)
 {
-	delete[] array;
+//	delete[] array;
+#pragma gecko memory free(array)
 }
 
 template <typename T>
 void copy(T* dst, T* src, int N)
 {
-	#pragma acc kernels present_or_copyin(src) present_or_create(dst)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(src,dst)
+	#pragma acc kernels present_or_copyin(src[0:N]) present_or_create(dst[0:N])
 	for(int i = 0; i < N; i++)
 	{
 		dst[i] = src[i];
 	}
+#pragma gecko region end
 }
 
 
@@ -92,7 +104,7 @@ void dump(double* variables, int nel, int nelr)
 /*
  * Element-based Cell-centered FVM solver functions
  */
-double ff_variable[NVAR];
+double *ff_variable;
 double3 ff_flux_contribution_momentum_x;
 double3 ff_flux_contribution_momentum_y;
 double3 ff_flux_contribution_momentum_z;
@@ -101,11 +113,13 @@ double3 ff_flux_contribution_density_energy;
 
 void initialize_variables(int nelr, double* variables)
 {
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(variables,ff_variable)
 	#pragma acc kernels
 	for(int i = 0; i < nelr; i++)
 	{
 		for(int j = 0; j < NVAR; j++) variables[i*NVAR + j] = ff_variable[j];
 	}
+#pragma gecko region end
 }
 
 inline void compute_flux_contribution(double& density, double3& momentum, double& density_energy, double& pressure, double3& velocity, double3& fc_momentum_x, double3& fc_momentum_y, double3& fc_momentum_z, double3& fc_density_energy)
@@ -154,6 +168,7 @@ inline double compute_speed_of_sound(double& density, double& pressure)
 
 void compute_step_factor(int nelr, double* variables, double* areas, double* step_factors)
 {
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(variables,ff_variable,step_factors)
 	#pragma acc kernels
 	for(int i = 0; i < nelr; i++)
 	{
@@ -173,6 +188,7 @@ void compute_step_factor(int nelr, double* variables, double* areas, double* ste
 		// dt = double(0.5) * std::sqrt(areas[i]) /  (||v|| + c).... but when we do time stepping, this later would need to be divided by the area, so we just do it all at once
 		step_factors[i] = double(0.5) / (std::sqrt(areas[i]) * (std::sqrt(speed_sqd) + speed_of_sound));
 	}
+#pragma gecko region end
 }
 
 
@@ -185,6 +201,7 @@ void compute_flux(int nelr, int* elements_surrounding_elements, double* normals,
 {
 	const double smoothing_coefficient = double(0.2f);
 
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(elements_surrounding_elements,variables,ff_variable,normals,fluxes)
 	#pragma acc kernels
 	for(int i = 0; i < nelr; i++)
 	{
@@ -312,10 +329,12 @@ void compute_flux(int nelr, int* elements_surrounding_elements, double* normals,
 		fluxes[i*NVAR + (VAR_MOMENTUM+2)] = flux_i_momentum.z;
 		fluxes[i*NVAR + VAR_DENSITY_ENERGY] = flux_i_density_energy;
 	}
+#pragma gecko region end
 }
 
 void time_step(int j, int nelr, double* old_variables, double* variables, double* step_factors, double* fluxes)
 {
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(old_variables,variables,step_factors,fluxes)
 	#pragma acc kernels
 	for(int i = 0; i < nelr; i++)
 	{
@@ -327,6 +346,7 @@ void time_step(int j, int nelr, double* old_variables, double* variables, double
 		variables[NVAR*i + (VAR_MOMENTUM+1)] = old_variables[NVAR*i + (VAR_MOMENTUM+1)] + factor*fluxes[NVAR*i + (VAR_MOMENTUM+1)];
 		variables[NVAR*i + (VAR_MOMENTUM+2)] = old_variables[NVAR*i + (VAR_MOMENTUM+2)] + factor*fluxes[NVAR*i + (VAR_MOMENTUM+2)];
 	}
+#pragma gecko region end
 }
 /*
  * Main function
@@ -339,6 +359,12 @@ int main(int argc, char** argv)
 		return 0;
 	}
 	const char* data_file_name = argv[1];
+
+#pragma gecko config env
+
+#pragma gecko memory allocate(ff_variable[0:NVAR]) type(double) location(exec_loc)
+
+
 
 	// set far field conditions
 	{
@@ -380,9 +406,12 @@ int main(int argc, char** argv)
 		file >> nel;
 		nelr = block_length*((nel / block_length )+ std::min(1, nel % block_length));
 
-		areas = new double[nelr];
-		elements_surrounding_elements = new int[nelr*NNB];
-		normals = new double[NDIM*NNB*nelr];
+//		areas = new double[nelr];
+//		elements_surrounding_elements = new int[nelr*NNB];
+//		normals = new double[NDIM*NNB*nelr];
+		areas = alloc<double>(nelr);
+		elements_surrounding_elements = alloc<int>(nelr*NNB);
+		normals = alloc<double>(NDIM*NNB*nelr);
 
 		// read in data
 		for(int i = 0; i < nel; i++)
@@ -418,7 +447,7 @@ int main(int argc, char** argv)
 
 	// Create arrays and set initial conditions
 	double* variables = alloc<double>(nelr*NVAR);
-	#pragma acc data create(variables[0:nelr*NVAR]) copyin(ff_variable)
+//	#pragma acc data create(variables[0:nelr*NVAR]) copyin(ff_variable)
 	{
 	initialize_variables(nelr, variables);
 	} /* end pragma acc data */
@@ -431,10 +460,10 @@ int main(int argc, char** argv)
 	std::cout << "Starting..." << std::endl;
 	double start = omp_get_wtime();
 
-	#pragma acc data create(old_variables[0:nelr*NVAR], step_factors[0:nelr]) \
-		create(step_factors[0:nelr], fluxes[0:nelr*NVAR]) \
-		copyin(areas[0:nelr], elements_surrounding_elements[0:nelr*NNB]) \
-		copyin(normals[0:NDIM*NNB*nelr]) copyout(variables[0:nelr*NVAR])
+//	#pragma acc data create(old_variables[0:nelr*NVAR], step_factors[0:nelr]) \
+//		create(step_factors[0:nelr], fluxes[0:nelr*NVAR]) \
+//		copyin(areas[0:nelr], elements_surrounding_elements[0:nelr*NNB]) \
+//		copyin(normals[0:NDIM*NNB*nelr]) copyout(variables[0:nelr*NVAR])
 	{
 	// Begin iterations
 	for(int i = 0; i < iterations; i++)
@@ -451,6 +480,8 @@ int main(int argc, char** argv)
 		}
 	}
 	} /* end pragma acc data */
+
+#pragma gecko region pause at(exec_loc)
 
 	double end = omp_get_wtime();
 	std::cout  << (end-start)  / iterations << " seconds per iteration" << std::endl;
