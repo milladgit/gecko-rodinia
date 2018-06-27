@@ -37,9 +37,15 @@ static struct option long_options[] = {
 extern void
 lud_openacc(float *m, int matrix_dim);
 
+char *exec_loc = "LocB";
+char *exec_policy_chosen = "static";
+
 int
 main ( int argc, char *argv[] )
 {
+
+#pragma gecko config env
+
   int matrix_dim = 32; /* default size */
   int opt, option_index=0;
   func_ret_t ret;
@@ -87,6 +93,18 @@ main ( int argc, char *argv[] )
           fprintf(stderr, "error create matrix from file %s\n", input_file);
           exit(EXIT_FAILURE);
       }
+
+	  float *m2;
+#pragma gecko memory allocate(m2[0:matrix_dim*matrix_dim]) type(float) location(exec_loc)
+	  for(int i=0;i<matrix_dim;i++) {
+		  for(int j=0;j<matrix_dim;j++) {
+			  int index = i*matrix_dim+j;
+			  m2[index] = m[index];
+		  }
+	  }
+	  free(m);
+	  m = m2;
+
   } else {
     printf("No input file specified!\n");
     exit(EXIT_FAILURE);
@@ -97,6 +115,7 @@ main ( int argc, char *argv[] )
     print_matrix(m, matrix_dim);
     matrix_duplicate(m, &mm, matrix_dim);
   }
+
 
       stopwatch_start(&sw);
       lud_openacc(m, matrix_dim);
@@ -111,7 +130,8 @@ main ( int argc, char *argv[] )
     free(mm);
   }
 
-  free(m);
+//  free(m);
+#pragma gecko memory free(m)
 
   return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */

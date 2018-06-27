@@ -137,7 +137,7 @@ void BFSGraph( int argc, char** argv)
 
 
 #pragma gecko region at(exec_loc) exec_pol("any") variable_list(h_updating_graph_mask,h_graph_mask,h_graph_visited)
-	#pragma acc kernels num_gangs(1) vector_length(1) present(h_graph_mask[0:no_of_nodes],h_graph_visited[0:no_of_nodes])
+	#pragma acc serial num_gangs(1) vector_length(1) present(h_graph_mask[0:no_of_nodes],h_graph_visited[0:no_of_nodes])
 	for(int i=0;i<1;i++)
 	{
 	    //set the source node as true in the mask
@@ -173,18 +173,21 @@ void BFSGraph( int argc, char** argv)
 		stop=false;
 
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_graph_mask,h_cost,h_graph_nodes,h_graph_visited,h_updating_graph_mask,h_graph_edges)
-		#pragma acc parallel loop
+		#pragma acc parallel loop independent
 		for(int tid = 0; tid < no_of_nodes; tid++ )
 		{
-			if (h_graph_mask[tid] == true){ 
-			h_graph_mask[tid]=false;
-			for(int i=h_graph_nodes[tid].starting; i<(h_graph_nodes[tid].no_of_edges + h_graph_nodes[tid].starting); i++)
+			if (h_graph_mask[tid] == true) {
+				h_graph_mask[tid]=false;
+#pragma acc loop independent
+				for(int i=h_graph_nodes[tid].starting; i<(h_graph_nodes[tid].no_of_edges + h_graph_nodes[tid].starting); i++)
 				{
-				int id = h_graph_edges[i];
-				if(!h_graph_visited[id])
-					{
-					h_cost[id]=h_cost[tid]+1;
-					h_updating_graph_mask[id]=true;
+					int id = h_graph_edges[i];
+					bool visited = h_graph_visited[id];
+					if(!visited) {
+#pragma acc atomic write
+						h_cost[id]=h_cost[tid]+1;
+
+						h_updating_graph_mask[id]=true;
 					}
 				}
 			}
@@ -192,14 +195,14 @@ void BFSGraph( int argc, char** argv)
 #pragma gecko region end
 
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_graph_mask,h_cost,h_graph_nodes,h_graph_visited,h_updating_graph_mask)
-		#pragma acc parallel loop vector reduction(||:stop)
+		#pragma acc parallel loop vector reduction(||:stop) independent
   		for(int tid=0; tid< no_of_nodes ; tid++ )
 		{
 			if (h_updating_graph_mask[tid] == true){
-			h_graph_mask[tid]=true;
-			h_graph_visited[tid]=true;
-			stop=true;
-			h_updating_graph_mask[tid]=false;
+				h_graph_mask[tid]=true;
+				h_graph_visited[tid]=true;
+				stop=true;
+				h_updating_graph_mask[tid]=false;
 			}
 		}
 #pragma gecko region end

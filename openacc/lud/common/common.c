@@ -183,6 +183,8 @@ lud_verify(float *m, float *lu, int matrix_dim){
       }
   }
   free(tmp);
+
+  return RET_SUCCESS;
 }
 
 void

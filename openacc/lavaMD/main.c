@@ -44,10 +44,22 @@
 //	MAIN FUNCTION
 //========================================================================================================================================================================================================200
 
+
+
+#include <string.h>
+#include <time.h>
+
+char *exec_loc = "LocB";
+char *exec_policy_chosen = "static";
+
+
+
 int 
 main(	int argc, 
 		char *argv [])
 {
+
+#pragma gecko config env
 
 	//======================================================================================================================================================150
 	//	CPU/MCPU VARIABLES
@@ -161,7 +173,8 @@ main(	int argc,
 	//====================================================================================================100
 
 	// allocate boxes
-	box_cpu = (box_str*)malloc(dim_cpu.box_mem);
+//	box_cpu = (box_str*)malloc(dim_cpu.box_mem);
+#pragma gecko memory allocate(box_cpu[0:dim_cpu.number_boxes]) type(box_str) location(exec_loc)
 
 	// initialize number of home boxes
 	nh = 0;
@@ -227,7 +240,8 @@ main(	int argc,
 	srand(time(NULL));
 
 	// input (distances)
-	rv_cpu = (FOUR_VECTOR*)malloc(dim_cpu.space_mem);
+//	rv_cpu = (FOUR_VECTOR*)malloc(dim_cpu.space_mem);
+#pragma gecko memory allocate(rv_cpu[0:dim_cpu.space_elem]) type(FOUR_VECTOR) location(exec_loc)
 	for(i=0; i<dim_cpu.space_elem; i=i+1){
 		rv_cpu[i].v = (rand()%10 + 1) / 10;			// get a number in the range 0.1 - 1.0
 		rv_cpu[i].x = (rand()%10 + 1) / 10;			// get a number in the range 0.1 - 1.0
@@ -236,13 +250,15 @@ main(	int argc,
 	}
 
 	// input (charge)
-	qv_cpu = (fp*)malloc(dim_cpu.space_mem2);
+//	qv_cpu = (fp*)malloc(dim_cpu.space_mem2);
+#pragma gecko memory allocate(qv_cpu[0:dim_cpu.space_elem]) type(fp) location(exec_loc)
 	for(i=0; i<dim_cpu.space_elem; i=i+1){
 		qv_cpu[i] = (rand()%10 + 1) / 10;			// get a number in the range 0.1 - 1.0
 	}
 
 	// output (forces)
-	fv_cpu = (FOUR_VECTOR*)malloc(dim_cpu.space_mem);
+//	fv_cpu = (FOUR_VECTOR*)malloc(dim_cpu.space_mem);
+#pragma gecko memory allocate(fv_cpu[0:dim_cpu.space_elem]) type(FOUR_VECTOR) location(exec_loc)
 	for(i=0; i<dim_cpu.space_elem; i=i+1){
 		fv_cpu[i].v = 0;								// set to 0, because kernels keeps adding to initial value
 		fv_cpu[i].x = 0;								// set to 0, because kernels keeps adding to initial value
@@ -259,9 +275,10 @@ main(	int argc,
 	//====================================================================================================100
 	//	CPU/MCPU
 	//====================================================================================================100
+//	#pragma acc data copy(fv_cpu[0:dim_cpu.space_elem]) \
+//		copyin(box_cpu[0:dim_cpu.number_boxes],rv_cpu[0:dim_cpu.space_elem],qv_cpu[0:dim_cpu.space_elem])
 
-	#pragma acc data copy(fv_cpu[0:dim_cpu.space_mem]) \
-		copyin(box_cpu[0:dim_cpu.box_mem],rv_cpu[0:dim_cpu.space_mem],qv_cpu[0:dim_cpu.space_mem2])
+
 	{
 	kernel_acc(	par_cpu,
 				dim_cpu,
@@ -277,10 +294,15 @@ main(	int argc,
 	//	SYSTEM MEMORY DEALLOCATION
 	//======================================================================================================================================================150
 
-	free(rv_cpu);
-	free(qv_cpu);
-	free(fv_cpu);
-	free(box_cpu);
+//	free(rv_cpu);
+//	free(qv_cpu);
+//	free(fv_cpu);
+//	free(box_cpu);
+#pragma gecko memory free(rv_cpu)
+#pragma gecko memory free(qv_cpu)
+#pragma gecko memory free(fv_cpu)
+#pragma gecko memory free(box_cpu)
+
 
 	time7 = get_time();
 

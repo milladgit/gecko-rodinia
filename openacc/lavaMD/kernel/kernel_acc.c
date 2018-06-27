@@ -20,6 +20,9 @@ extern "C" {
 
 #include "./../main.h"								// (in the main program folder)	needed to recognized input variables
 
+extern char *exec_loc;
+extern char *exec_policy_chosen;
+
 //======================================================================================================================================================150
 //	UTILITIES
 //======================================================================================================================================================150
@@ -106,14 +109,17 @@ void  kernel_acc(	par_str par,
 	//	PROCESS INTERACTIONS
 	//======================================================================================================================================================150
 
-	#pragma acc parallel loop present(box,rv,qv,fv)
-	for(l=0; l<dim.number_boxes; l=l+1){
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(box,rv,qv,fv)
+	#pragma acc parallel loop present(box[0:dim.number_boxes],rv[0:dim.space_elem],qv[0:dim.space_elem],fv[0:dim.space_elem])
+	for(l=0; l<dim.number_boxes; l++){
+
 
 		//------------------------------------------------------------------------------------------100
 		//	home box - box parameters
 		//------------------------------------------------------------------------------------------100
 
 		first_i = box[l].offset;												// offset to common arrays
+
 
 		//------------------------------------------------------------------------------------------100
 		//	home box - distance, force, charge and type parameters from common arrays
@@ -187,7 +193,12 @@ void  kernel_acc(	par_str par,
 
 		} // for k
 
+
 	} // for l
+#pragma gecko region end
+
+#pragma gecko region pause at(exec_loc)
+
 
 	time4 = get_time();
 

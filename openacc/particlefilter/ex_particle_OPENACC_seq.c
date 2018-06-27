@@ -6,6 +6,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 #include <sys/time.h>
 #include <limits.h>
@@ -23,6 +24,13 @@ int A = 1103515245;
 @var C value for LCG
 */
 int C = 12345;
+
+/***************************************
+ * Gecko's execution location and policy
+ ***************************************/
+static char *exec_loc = "LocB";
+static char *exec_policy_chosen = "static";
+
 /*****************************
 *GET_TIME
 *returns a long int representing the time
@@ -283,6 +291,7 @@ double calcLikelihoodSum(int * I, int * ind, int numOnes){
 { \
 	int index = -1; \
 	int x; \
+	#pragma acc loop seq \
 	for(x = 0; x < lengthCDF; x++){ \
 		if(CDF[x] >= value){ \
 			index = x; \
@@ -363,40 +372,63 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 				countOnes++;
 		}
 	}
-	double * objxy = (double *)malloc(countOnes*2*sizeof(double));
+	double * objxy;
+//	objxy = (double *)malloc(countOnes*2*sizeof(double));
+#pragma gecko memory allocate(objxy[0:countOnes*2]) type(double) location(exec_loc)
+
 	getneighbors(disk, countOnes, objxy, radius);
-	
-	#pragma acc data copy(I[0:IszX*IszY*Nfr]) copyin(seed[0:Nparticles]) \
-		create(ind[0:countOnes*Nparticles],likelihood[0:Nparticles],CDF[0:Nparticles]) \
-		create(u[0:Nparticles],xj[0:Nparticles],yj[0:Nparticles]) \
-		create(weights[0:Nparticles],arrayX[0:Nparticles],arrayY[0:Nparticles])
+
+//	ind = (int*)malloc(sizeof(int)*countOnes*Nparticles);
+//	likelihood = (double *)malloc(sizeof(double)*Nparticles);
+//	CDF = (double *)malloc(sizeof(double)*Nparticles);
+//	u = (double *)malloc(sizeof(double)*Nparticles);
+//	arrayX = (double *)malloc(sizeof(double)*Nparticles);
+//	arrayY = (double *)malloc(sizeof(double)*Nparticles);
+//	xj = (double *)malloc(sizeof(double)*Nparticles);
+//	yj = (double *)malloc(sizeof(double)*Nparticles);
+//	weights = (double *)malloc(sizeof(double)*Nparticles);
+
+#pragma gecko memory allocate(ind[0:countOnes*Nparticles]) type(int) location(exec_loc)
+#pragma gecko memory allocate(likelihood[0:Nparticles]) type(double) location(exec_loc)
+#pragma gecko memory allocate(CDF[0:Nparticles]) type(double) location(exec_loc)
+#pragma gecko memory allocate(u[0:Nparticles]) type(double) location(exec_loc)
+#pragma gecko memory allocate(arrayX[0:Nparticles]) type(double) location(exec_loc)
+#pragma gecko memory allocate(arrayY[0:Nparticles]) type(double) location(exec_loc)
+#pragma gecko memory allocate(xj[0:Nparticles]) type(double) location(exec_loc)
+#pragma gecko memory allocate(yj[0:Nparticles]) type(double) location(exec_loc)
+#pragma gecko memory allocate(weights[0:Nparticles]) type(double) location(exec_loc)
+
+
+//	#pragma acc data copy(I[0:IszX*IszY*Nfr]) copyin(seed[0:Nparticles]) \
+//		create(ind[0:countOnes*Nparticles],likelihood[0:Nparticles],CDF[0:Nparticles]) \
+//		create(u[0:Nparticles],xj[0:Nparticles],yj[0:Nparticles]) \
+//		create(weights[0:Nparticles],arrayX[0:Nparticles],arrayY[0:Nparticles]) \
+//		copyin(objxy[0:countOnes*2])
 	{
 
 	long long get_neighbors = get_time();
 	printf("TIME TO GET NEIGHBORS TOOK: %f\n", elapsed_time(start, get_neighbors));
 	//initial weights are all equal (1/Nparticles)
-	weights = (double *)malloc(sizeof(double)*Nparticles);
-	#pragma acc parallel loop
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(weights)
+	#pragma acc parallel loop present(weights[0:Nparticles])
 	for(x = 0; x < Nparticles; x++){
 		weights[x] = 1/((double)(Nparticles));
 	}
+#pragma gecko region end
 	long long get_weights = get_time();
-	printf("TIME TO GET WEIGHTSTOOK: %f\n", elapsed_time(get_neighbors, get_weights));
+	printf("TIME TO GET WEIGHTS TOOK: %f\n", elapsed_time(get_neighbors, get_weights));
+
+#pragma gecko region pause at(exec_loc)
+
 	//initial likelihood to 0.0
-	likelihood = (double *)malloc(sizeof(double)*Nparticles);
-	arrayX = (double *)malloc(sizeof(double)*Nparticles);
-	arrayY = (double *)malloc(sizeof(double)*Nparticles);
-	xj = (double *)malloc(sizeof(double)*Nparticles);
-	yj = (double *)malloc(sizeof(double)*Nparticles);
-	CDF = (double *)malloc(sizeof(double)*Nparticles);
-	u = (double *)malloc(sizeof(double)*Nparticles);
-	ind = (int*)malloc(sizeof(int)*countOnes*Nparticles);
 	for(x = 0; x < Nparticles; x++){
 		arrayX[x] = xe;
 		arrayY[x] = ye;
 	}
 	int k;
-	
+
+#pragma gecko region pause at(exec_loc)
+
 	printf("TIME TO SET ARRAYS TOOK: %f\n", elapsed_time(get_weights, get_time()));
 	int indX, indY;
 
@@ -409,12 +441,13 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 			arrayX[x] += 1 + 5*randn(seed, x);
 			arrayY[x] += -2 + 2*randn(seed, x);
 		}
-		#pragma acc update device(arrayX[0:Nparticles],arrayY[0:Nparticles])
-		
+//		#pragma acc update device(arrayX[0:Nparticles],arrayY[0:Nparticles])
+
 		long long error = get_time();
 		printf("TIME TO SET ERROR TOOK: %f\n", elapsed_time(set_arrays, error));
 		//particle filter likelihood
-		#pragma acc parallel loop
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(likelihood,arrayX,arrayY,ind,objxy,I)
+		#pragma acc parallel loop present(likelihood[0:Nparticles],arrayX[0:Nparticles],arrayY[0:Nparticles],ind[0:countOnes*Nparticles],objxy[0:countOnes*2],I[0:IszX*IszY*Nfr])
 		for(x = 0; x < Nparticles; x++){
 			//compute the likelihood: remember our assumption is that you know
 			// foreground and the background image intensity distribution.
@@ -436,38 +469,51 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 				likelihood[x] += (pow((I[ind[x*countOnes + y]] - 100),2) - pow((I[ind[x*countOnes + y]]-228),2))/50.0;
 			likelihood[x] = likelihood[x]/((double) countOnes);
 		}
+#pragma gecko region end
 		long long likelihood_time = get_time();
 		printf("TIME TO GET LIKELIHOODS TOOK: %f\n", elapsed_time(error, likelihood_time));
 		// update & normalize weights
 		// using equation (63) of Arulampalam Tutorial
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(weights,likelihood)
 		#pragma acc parallel loop
 		for(x = 0; x < Nparticles; x++){
 			weights[x] = weights[x] * exp(likelihood[x]);
 		}
+#pragma gecko region end
 		long long exponential = get_time();
 		printf("TIME TO GET EXP TOOK: %f\n", elapsed_time(likelihood_time, exponential));
 		double sumWeights = 0;
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(weights)
 		#pragma acc parallel loop vector reduction(+:sumWeights)
 		for(x = 0; x < Nparticles; x++){
 			sumWeights += weights[x];
 		}
+#pragma gecko region end
+
 		long long sum_time = get_time();
 		printf("TIME TO SUM WEIGHTS TOOK: %f\n", elapsed_time(exponential, sum_time));
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(weights)
 		#pragma acc parallel loop
 		for(x = 0; x < Nparticles; x++){
 			weights[x] = weights[x]/sumWeights;
 		}
+#pragma gecko region end
 		long long normalize = get_time();
 		printf("TIME TO NORMALIZE WEIGHTS TOOK: %f\n", elapsed_time(sum_time, normalize));
 		xe = 0;
 		ye = 0;
 		// estimate the object location by expected values
-		#pragma acc parallel loop vector reduction(+:xe, ye)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(weights,arrayX,arrayY)
+		#pragma acc parallel loop vector reduction(+:xe, ye) present(weights[0:Nparticles],arrayX[0:Nparticles],arrayY[0:Nparticles])
 		for(x = 0; x < Nparticles; x++){
 			double weight = weights[x];
 			xe += arrayX[x] * weight;
 			ye += arrayY[x] * weight;
 		}
+#pragma gecko region end
+
+#pragma gecko region pause at(exec_loc)
+
 		long long move_time = get_time();
 		printf("TIME TO MOVE OBJECT TOOK: %f\n", elapsed_time(normalize, move_time));
 		printf("XE: %lf\n", xe);
@@ -480,65 +526,88 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		
 		//resampling
 		
-		#pragma acc update host(weights[0:Nparticles])
+//		#pragma acc update host(weights[0:Nparticles])
 
 		CDF[0] = weights[0];
 		for(x = 1; x < Nparticles; x++){
 			CDF[x] = weights[x] + CDF[x-1];
 		}
 
-		#pragma acc update device(CDF[0:Nparticles]) async(UPDATE_TARGET_CDF)
+//		#pragma acc update device(CDF[0:Nparticles]) async(UPDATE_TARGET_CDF)
 
 		long long cum_sum = get_time();
 		printf("TIME TO CALC CUM SUM TOOK: %f\n", elapsed_time(move_time, cum_sum));
 		double u1 = (1/((double)(Nparticles)))*randu(seed, 0);
-		#pragma acc parallel loop
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(u)
+		#pragma acc parallel loop present(u[0:Nparticles])
 		for(x = 0; x < Nparticles; x++){
 			u[x] = u1 + x/((double)(Nparticles));
 		}
+#pragma gecko region end
 		long long u_time = get_time();
 		printf("TIME TO CALC U TOOK: %f\n", elapsed_time(cum_sum, u_time));
 		int j, i;
 
-		#pragma acc wait(UPDATE_TARGET_CDF)
-		
-		#pragma acc parallel loop
+//		#pragma acc wait(UPDATE_TARGET_CDF)
+
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(xj,yj,arrayX,arrayY,CDF,u)
+		#pragma acc parallel loop private(i) present(xj[0:Nparticles],yj[0:Nparticles],arrayX[0:Nparticles],arrayY[0:Nparticles],u[0:Nparticles],CDF[0:Nparticles])
 		for(j = 0; j < Nparticles; j++){
 			FIND_INDEX(i, CDF, Nparticles, u[j]);
-			if(i == -1)
+			if(i < 0 || i >= Nparticles)
 				i = Nparticles-1;
 			xj[j] = arrayX[i];
 			yj[j] = arrayY[i];
 			
 		}
+#pragma gecko region end
 		long long xyj_time = get_time();
 		printf("TIME TO CALC NEW ARRAY X AND Y TOOK: %f\n", elapsed_time(u_time, xyj_time));
 		//reassign arrayX and arrayY
-		#pragma acc parallel loop
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(xj,yj,arrayX,arrayY,weights)
+		#pragma acc parallel loop present(xj[0:Nparticles],yj[0:Nparticles],arrayX[0:Nparticles],arrayY[0:Nparticles],weights[0:Nparticles])
 		for(x = 0; x < Nparticles; x++){
 			//reassign arrayX and arrayY
 			arrayX[x] = xj[x];
 			arrayY[x] = yj[x];
 			weights[x] = 1/((double)(Nparticles));
 		}
+#pragma gecko region end
 		long long reset = get_time();
 		printf("TIME TO RESET WEIGHTS TOOK: %f\n", elapsed_time(xyj_time, reset));
 
-		#pragma acc update host(arrayX[0:Nparticles], arrayY[0:Nparticles])
+//		#pragma acc update host(arrayX[0:Nparticles], arrayY[0:Nparticles])
+#pragma gecko region pause at(exec_loc)
+
 	}
 	} /* end pragma acc data */
+
 	free(disk);
-	free(objxy);
-	free(weights);
-	free(likelihood);
-	free(arrayX);
-	free(arrayY);
-	free(CDF);
-	free(u);
-	free(ind);
+
+//	free(objxy);
+//	free(weights);
+//	free(likelihood);
+//	free(arrayX);
+//	free(arrayY);
+//	free(CDF);
+//	free(u);
+//	free(ind);
+//	free(xj);
+//	free(yj);
+#pragma gecko memory free(objxy)
+#pragma gecko memory free(weights)
+#pragma gecko memory free(likelihood)
+#pragma gecko memory free(arrayX)
+#pragma gecko memory free(arrayY)
+#pragma gecko memory free(CDF)
+#pragma gecko memory free(u)
+#pragma gecko memory free(ind)
+#pragma gecko memory free(xj)
+#pragma gecko memory free(yj)
+
 }
 int main(int argc, char * argv[]){
-	
+
 	char* usage = "particle_filter -x <dimX> -y <dimY> -z <Nfr> -np <Nparticles>";
 	//check number of arguments
 	if(argc != 9)
@@ -597,13 +666,22 @@ int main(int argc, char * argv[]){
 		printf("Number of particles must be > 0\n");
 		return 0;
 	}
+
+#pragma gecko config env
+
 	//establish seed
-	int * seed = (int *)malloc(sizeof(int)*Nparticles);
+	int *seed;
+//	seed = (int *)malloc(sizeof(int)*Nparticles);
+#pragma gecko memory allocate(seed[0:Nparticles]) type(int) location(exec_loc)
+
 	int i;
 	for(i = 0; i < Nparticles; i++)
 		seed[i] = time(0)*i;
 	//malloc matrix
-	int * I = (int *)malloc(sizeof(int)*IszX*IszY*Nfr);
+	int *I;
+//	I = (int *)malloc(sizeof(int)*IszX*IszY*Nfr);
+#pragma gecko memory allocate(I[0:IszX*IszY*Nfr]) type(int) location(exec_loc)
+
 	long long start = get_time();
 	//call video sequence
 	videoSequence(I, IszX, IszY, Nfr, seed);
@@ -615,7 +693,10 @@ int main(int argc, char * argv[]){
 	printf("PARTICLE FILTER TOOK %f\n", elapsed_time(endVideoSequence, endParticleFilter));
 	printf("ENTIRE PROGRAM TOOK %f\n", elapsed_time(start, endParticleFilter));
 	
-	free(seed);
-	free(I);
+//	free(seed);
+//	free(I);
+#pragma gecko memory free(seed)
+#pragma gecko memory free(I)
+
 	return 0;
 }

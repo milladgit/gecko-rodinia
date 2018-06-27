@@ -5,6 +5,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 #include <float.h>
 #include <math.h>
@@ -41,12 +43,20 @@ void printUsage();
 int parseCommandline(int argc, char *argv[], char* filename,int *r,float *lat,float *lng,
                      int *q, int *t, int *p, int *d);
 
+
+static char *exec_loc = "LocB";
+static char *exec_policy_chosen = "static";
+
 /**
 * This program finds the k-nearest neighbors
 **/
 
 int main(int argc, char* argv[])
 {
+
+	#pragma gecko config env
+
+
 	int    i=0;
 	float lat, lng;
 	int quiet=0,timing=0,platform=0,device=0;
@@ -77,18 +87,30 @@ int main(int argc, char* argv[])
 	/**
 	* Allocate memory
 	*/
-	distances = (float *)malloc(sizeof(float) * numRecords);
-	locations = (LatLong *) malloc(sizeof(LatLong) * numRecords);
-  for (i=0; i<numRecords; i++) locations[i] = locations_vec[i];
+//	distances = (float *)malloc(sizeof(float) * numRecords);
+//	locations = (LatLong *) malloc(sizeof(LatLong) * numRecords);
+#pragma gecko memory allocate(distances[0:numRecords]) type(float) location(exec_loc)
+#pragma gecko memory allocate(locations[0:numRecords]) type(LatLong) location(exec_loc)
+
+    for (i=0; i<numRecords; i++)
+        locations[i] = locations_vec[i];
+
+
 
     /**
      * Execute kernel
      */
-    #pragma acc kernels copyin(locations[0:numRecords]) copyout(distances[0:numRecords])
-    for (i=0; i<numRecords; i++) {
+//    #pragma acc kernels copyin(locations[0:numRecords]) copyout(distances[0:numRecords])
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(distances,locations)
+	#pragma acc parallel loop independent copyin(locations[0:numRecords]) copyout(distances[0:numRecords])
+	for (i=0; i<numRecords; i++) {
       LatLong latlong = locations[i];
       distances[i] = (float)sqrt((lat-latlong.lat)*(lat-latlong.lat)+(lng-latlong.lng)*(lng-latlong.lng));
     }
+#pragma gecko region end
+
+#pragma gecko region pause at(exec_loc)
+
 
 	// find the resultsCount least distances
     findLowest(records,distances,numRecords,resultsCount);
@@ -98,8 +120,10 @@ int main(int argc, char* argv[])
     for(i=0;i<resultsCount;i++) {
       printf("%s --> Distance=%f\n",records[i].recString,records[i].distance);
     }
-    free(distances);
-    free(locations);
+//    free(distances);
+//    free(locations);
+#pragma gecko memory free(distances)
+#pragma gecko memory free(locations)
 
 }
 

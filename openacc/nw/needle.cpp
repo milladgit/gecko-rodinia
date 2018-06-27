@@ -46,6 +46,9 @@ double gettime() {
   return t.tv_sec+t.tv_usec*1e-6;
 }
 
+static char *exec_loc = "LocB";
+static char *exec_policy_chosen = "static";
+
 ////////////////////////////////////////////////////////////////////////////////
 // Program main
 ////////////////////////////////////////////////////////////////////////////////
@@ -72,6 +75,8 @@ void usage(int argc, char **argv)
 void
 runTest( int argc, char** argv) 
 {
+	#pragma gecko config env
+
     int max_rows, max_cols, penalty,idx, index;
     int *input_itemsets, *output_itemsets, *referrence;
 	int *matrix_cuda, *matrix_cuda_out, *referrence_cuda;
@@ -92,10 +97,15 @@ runTest( int argc, char** argv)
 
 	max_rows = max_rows + 1;
 	max_cols = max_cols + 1;
-	referrence = (int *)malloc( max_rows * max_cols * sizeof(int) );
-    input_itemsets = (int *)malloc( max_rows * max_cols * sizeof(int) );
-	output_itemsets = (int *)malloc( max_rows * max_cols * sizeof(int) );
-	
+//	referrence = (int *)malloc( max_rows * max_cols * sizeof(int) );
+//    input_itemsets = (int *)malloc( max_rows * max_cols * sizeof(int) );
+//	output_itemsets = (int *)malloc( max_rows * max_cols * sizeof(int) );
+
+	int total_elements = max_rows*max_cols;
+#pragma gecko memory allocate(referrence[0:total_elements]) type(int) location(exec_loc)
+#pragma gecko memory allocate(input_itemsets[0:total_elements]) type(int) location(exec_loc)
+#pragma gecko memory allocate(output_itemsets[0:total_elements]) type(int) location(exec_loc)
+
 
 	if (!input_itemsets)
 		fprintf(stderr, "error: can not allocate memory");
@@ -124,22 +134,28 @@ runTest( int argc, char** argv)
 		}
 	}
 
-	#pragma acc data copy(input_itemsets[0:max_rows*max_cols]) \
-	    copyin(referrence[0:max_rows*max_cols])
+//	#pragma acc data copy(input_itemsets[0:max_rows*max_cols]) \
+//	    copyin(referrence[0:max_rows*max_cols])
 	{
-		
+
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(input_itemsets)
 	#pragma acc parallel loop
     for( int i = 1; i< max_rows ; i++)
        input_itemsets[i*max_cols] = -i * penalty;
+#pragma gecko region end
+
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(input_itemsets)
 	#pragma acc parallel loop
 	for( int j = 1; j< max_cols ; j++)
        input_itemsets[j] = -j * penalty;
+#pragma gecko region end
 
 
 	//Compute top-left matrix 
 	printf("Processing top-left matrix\n");
 	
     for( int i = 0 ; i < max_cols-2 ; i++){
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(input_itemsets,referrence)
     	#pragma acc parallel loop
 		for( idx = 0 ; idx <= i ; idx++){
 		 index = (idx + 1) * max_cols + (i + 1 - idx);
@@ -148,12 +164,14 @@ runTest( int argc, char** argv)
 									     input_itemsets[index-max_cols]  - penalty);
 
 		}
+#pragma gecko region end
 	}
 
 	//Compute bottom-right matrix 
 	printf("Processing bottom-right matrix\n");
     
 	for( int i = max_cols - 4 ; i >= 0 ; i--){
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(input_itemsets,referrence)
 		#pragma acc parallel loop
         for( idx = 0 ; idx <= i ; idx++){
 	      index =  ( max_cols - idx - 2 ) * max_cols + idx + max_cols - i - 2 ;
@@ -161,10 +179,12 @@ runTest( int argc, char** argv)
 			                              input_itemsets[index-1]         - penalty, 
 									      input_itemsets[index-max_cols]  - penalty);
 	      }
-
+#pragma gecko region end
 	}
 	
 	} /* end pragma acc data */
+
+#pragma gecko region pause at(exec_loc)
 
 //#define TRACEBACK
 #ifdef TRACEBACK
@@ -227,9 +247,13 @@ runTest( int argc, char** argv)
 
 #endif
 
-	free(referrence);
-	free(input_itemsets);
-	free(output_itemsets);
+//	free(referrence);
+//	free(input_itemsets);
+//	free(output_itemsets);
+
+#pragma gecko memory free(referrence)
+#pragma gecko memory free(input_itemsets)
+#pragma gecko memory free(output_itemsets)
 
 }
 

@@ -114,7 +114,7 @@ double3 ff_flux_contribution_density_energy;
 void initialize_variables(int nelr, double* variables)
 {
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(variables,ff_variable)
-	#pragma acc kernels
+	#pragma acc parallel loop collapse(2) independent
 	for(int i = 0; i < nelr; i++)
 	{
 		for(int j = 0; j < NVAR; j++) variables[i*NVAR + j] = ff_variable[j];
@@ -169,7 +169,7 @@ inline double compute_speed_of_sound(double& density, double& pressure)
 void compute_step_factor(int nelr, double* variables, double* areas, double* step_factors)
 {
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(variables,ff_variable,step_factors)
-	#pragma acc kernels
+	#pragma acc parallel loop independent
 	for(int i = 0; i < nelr; i++)
 	{
 		double density = variables[NVAR*i + VAR_DENSITY];
@@ -202,7 +202,7 @@ void compute_flux(int nelr, int* elements_surrounding_elements, double* normals,
 	const double smoothing_coefficient = double(0.2f);
 
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(elements_surrounding_elements,variables,ff_variable,normals,fluxes)
-	#pragma acc kernels
+#pragma acc parallel loop independent
 	for(int i = 0; i < nelr; i++)
 	{
 		int j, nb;
@@ -240,6 +240,7 @@ void compute_flux(int nelr, int* elements_surrounding_elements, double* normals,
 		double3 flux_contribution_nb_density_energy;
 		double speed_sqd_nb, speed_of_sound_nb, pressure_nb;
 
+#pragma acc loop independent
 		for(j = 0; j < NNB; j++)
 		{
 			nb = elements_surrounding_elements[i*NNB + j];
@@ -335,8 +336,8 @@ void compute_flux(int nelr, int* elements_surrounding_elements, double* normals,
 void time_step(int j, int nelr, double* old_variables, double* variables, double* step_factors, double* fluxes)
 {
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(old_variables,variables,step_factors,fluxes)
-	#pragma acc kernels
-	for(int i = 0; i < nelr; i++)
+    #pragma acc parallel loop independent
+    for(int i = 0; i < nelr; i++)
 	{
 		double factor = step_factors[i]/double(RK+1-j);
 

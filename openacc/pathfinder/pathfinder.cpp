@@ -12,13 +12,18 @@ void run(int argc, char** argv);
 #define pin_stats_pause(cycles)   stopCycle(cycles)
 #define pin_stats_dump(cycles)    printf("timer: %Lu\n", cycles)
 
-#define BENCH_PRINT
+//#define BENCH_PRINT
 
 int rows, cols;
 int* data;
 #define wall(i,j) (data[i*rows+j])
 int* result;
 #define M_SEED 9
+
+
+static char *exec_loc = "LocB";
+static char *exec_policy_chosen = "static";
+
 
 void
 init(int argc, char** argv)
@@ -30,9 +35,11 @@ init(int argc, char** argv)
                 printf("Usage: pathfiner width num_of_steps\n");
                 exit(0);
         }
-	data = new int[rows*cols];
-	result = new int[cols];
-	
+//	data = new int[rows*cols];
+//	result = new int[cols];
+#pragma gecko memory allocate(data[0:rows*cols]) type(int) location(exec_loc)
+#pragma gecko memory allocate(result[0:cols]) type(int) location(exec_loc)
+
 	int seed = M_SEED;
 	srand(seed);
 
@@ -77,6 +84,8 @@ int main(int argc, char** argv)
 
 void run(int argc, char** argv)
 {
+#pragma gecko config env
+
     init(argc, argv);
 
     unsigned long long cycles;
@@ -85,16 +94,20 @@ void run(int argc, char** argv)
     int min;
 
     dst = result;
-    src = new int[cols];
+//    src = new int[cols];
+#pragma gecko memory allocate(src[0:cols]) type(int) location(exec_loc)
 
     pin_stats_reset();
-    #pragma acc data create(src[0:cols]) copy(dst[0:cols], data[0:rows*cols])
+//    #pragma acc data create(src[0:cols]) copy(dst[0:cols], data[0:rows*cols])
+
     {
     for (int t = 0; t < rows-1; t++) {
         temp = src;
         src = dst;
         dst = temp;
-        #pragma acc kernels
+
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(src,dst,data)
+        #pragma acc parallel loop independent
         for(int n = 0; n < cols; n++){
           min = src[n];
           if (n > 0)
@@ -103,8 +116,13 @@ void run(int argc, char** argv)
             min = MIN(min, src[n+1]);
           dst[n] = wall(t+1,n)+min;
         }
+#pragma gecko region end
+
     }
     } /* end pragma acc data */
+
+#pragma gecko region pause at(exec_loc)
+
 
     pin_stats_pause(cycles);
     pin_stats_dump(cycles);
@@ -125,8 +143,11 @@ void run(int argc, char** argv)
 
 #endif
 
-    delete [] data;
-    delete [] dst;
-    delete [] src;
+//    delete [] data;
+//    delete [] dst;
+//    delete [] src;
+#pragma gecko memory free(data)
+#pragma gecko memory free(dst)
+#pragma gecko memory free(src)
 }
 

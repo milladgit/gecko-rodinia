@@ -1,6 +1,6 @@
 C_C = pgc++
 #OMP_LIB = -lgomp
-ACC_FLAG = -w -mp -acc -ta=tesla -Minfo=accel  -std=c++11 -Mcuda
+ACC_FLAG = -w -mp -acc -ta=tesla,multicore -Minfo=accel -O3  -std=c++11 -Mcuda
 
 ACC_FLAG += -I$(GECKO_HOME)/ -L$(GECKO_HOME)/lib
 CC_LIB = -lgecko
@@ -38,7 +38,6 @@ main.o:	./common.h \
 			./main.c \
 			-c \
 			-o ./main.o \
-			-O3 \
 			$(CC_LIB)
 
 # ======================================================================================================================================================150
@@ -52,7 +51,6 @@ main.o:	./common.h \
 			./kernel/kernel_cpu.c \
 			-c \
 			-o ./kernel/kernel_cpu.o \
-			-O3 \
 			$(CC_LIB)
 
 ./kernel/kernel_cpu_2.o:./common.h \
@@ -62,7 +60,6 @@ main.o:	./common.h \
 			./kernel/kernel_cpu_2.c \
 			-c \
 			-o ./kernel/kernel_cpu_2.o \
-			-O3 \
 			$(CC_LIB)
 
 # ======================================================================================================================================================150
@@ -76,7 +73,6 @@ main.o:	./common.h \
 			./util/timer/timer.c \
 			-c \
 			-o ./util/timer/timer.o \
-			-O3 \
 			$(CC_LIB)
 
 ./util/num/num.o:	./common.h \
@@ -86,7 +82,6 @@ main.o:	./common.h \
 			./util/num/num.c \
 			-c \
 			-o ./util/num/num.o \
-			-O3 \
 			$(CC_LIB)
 
 # ======================================================================================================================================================150

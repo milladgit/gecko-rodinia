@@ -87,7 +87,7 @@ kernel_cpu_2(	int cores_arg,
 
 	// process number of querries
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(knodes,currKnode,lastKnode,offset,offset_2,start,end,recstart,reclength)
-	#pragma acc kernels private(thid,bid,i)
+	#pragma acc kernels present(knodes,currKnode,lastKnode,offset,offset_2,start,end) private(thid,bid,i)
 	for(bid = 0; bid < count; bid++){
 
 		// process levels of the tree
@@ -125,7 +125,7 @@ kernel_cpu_2(	int cores_arg,
 #pragma gecko region end
 
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(knodes,currKnode,lastKnode,offset,offset_2,start,end,recstart,reclength)
-	#pragma acc kernels
+	#pragma acc kernels present(recstart,knodes,currKnode,start,end)
 	for(bid = 0; bid < count; bid++){
 		// process leaves
 		for(thid = 0; thid < threadsPerBlock; thid++){
@@ -141,7 +141,7 @@ kernel_cpu_2(	int cores_arg,
 #pragma gecko region end
 
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(knodes,currKnode,lastKnode,offset,offset_2,start,end,recstart,reclength)
-	#pragma acc kernels private(thid)
+	#pragma acc kernels present(recstart,knodes,currKnode,start,end,reclength) private(thid)
 	for(bid = 0; bid < count; bid++){
 		// process leaves
 		for(thid = 0; thid < threadsPerBlock; thid++){

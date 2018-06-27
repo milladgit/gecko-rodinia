@@ -1,6 +1,6 @@
 # C compiler
 CC = pgc++
-CC_FLAGS = -w -mp -acc -ta=tesla -Minfo=accel -O3 -std=c++11 -Mcuda
+CC_FLAGS = -w -mp -acc -ta=tesla,multicore -Minfo=accel -O3 -std=c++11 -Mcuda
 
 # CC_FLAGS+=-g 
 

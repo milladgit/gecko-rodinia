@@ -1,13 +1,18 @@
 #makefile
 
-CC = pgcc
-FLAGS = -acc -Minfo
+CC = pgc++
+FLAGS = -w -mp -acc -ta=tesla,multicore -Minfo=accel -O3 -Mcuda -std=c++11 
 
-openmp: ex_particle_OPENACC_seq.c
-	$(CC) -O3 $(FLAGS) ex_particle_OPENACC_seq.c -o particle_filter -lm
-	
+FLAGS += -I$(GECKO_HOME)/ -L$(GECKO_HOME)/lib
+CC_LIB = -lgecko
+
+
 all: ex_particle_OPENACC_seq.c
-	$(CC) $(FLAGS) ex_particle_OPENACC_seq.c -o particle_filter_psc -lm
+	$(CC) $(FLAGS) ex_particle_OPENACC_seq.c -o particle_filter -lm $(CC_LIB)
+
+# openmp: ex_particle_OPENACC_seq.c
+# 	$(CC) -O3 $(FLAGS) ex_particle_OPENACC_seq.c -o particle_filter -lm
+	
 
 clean:
-	rm particle_filter
+	rm -rf *.o particle_filter

@@ -3,7 +3,7 @@
 #
 
 # DEBUG can be set to YES to include debugging info, or NO otherwise
-DEBUG          := YES
+DEBUG          := NO
 
 # PROFILE can be set to YES to include profiling info, or NO otherwise
 PROFILE        := NO
@@ -14,24 +14,29 @@ EXECUTABLE      := lud_openacc
 # ------------  list of all source files  --------------------------------------
 SOURCES         := lud.c lud_openacc.c ../common/common.c 
 
+# ------------  GECKO ----------------------------------------------------------
+GECKO_CFLAGS    := -std=c++11 -Mcuda -I$(GECKO_HOME)/ 
+GECKO_LIBDIR    := $(GECKO_HOME)/lib
+GECKO_LDFLAGS   := -lgecko
+
 # ------------  compiler  ------------------------------------------------------
-CC              := pathcc
-CXX             := pathCC
+CC              := pgc++
+CXX             := pgc++
 
 # ------------  compiler flags  ------------------------------------------------
 DEBUG_CFLAGS    := -O0 -g
 RELEASE_CFLAGS  := -O3 
-COMMON_CFLAGS   := -acc
+COMMON_CFLAGS   := -mp -acc -ta=tesla,multicore -Minfo=accel -Mcuda $(GECKO_CFLAGS)
 
 # ------------  compiler defs  ------------------------------------------------
-DEBUG_CDEFS    := 
-RELEASE_CDEFS  := 
+DEBUG_CDEFS    := -O0 -g
+RELEASE_CDEFS  := -O3
 COMMON_CDEFS   := 
 
 # ------------  linker flags  --------------------------------------------------
 DEBUG_LDFLAGS    := -g
 RELEASE_LDFLAGS  := 
-COMMON_LDFLAGS   := -acc
+COMMON_LDFLAGS   := -mp -acc -ta=tesla,multicore -Minfo=accel -Mcuda
 
 ifeq (YES, ${DEBUG})
   CFLAGS       := ${DEBUG_CFLAGS} ${DEBUG_CDEFS}
@@ -60,7 +65,7 @@ GLOBAL_INC_DIR  =
 LOCAL_INC_DIR   = ../common
 
 # ------------  system libraries  (e.g. -lm )  ---------------------------------
-SYS_LIBS        = 
+SYS_LIBS        = $(GECKO_LDFLAGS)
 
 # ------------  additional system library directories  -------------------------
 GLOBAL_LIB_DIR  =
@@ -69,10 +74,10 @@ GLOBAL_LIB_DIR  =
 GLOBAL_LIBS     =
 
 # ------------  private library directories  -----------------------------------
-LOCAL_LIB_DIR   = 
+LOCAL_LIB_DIR   = $(GECKO_LIBDIR)
 
 # ------------  private libraries  (e.g. libxyz.a )  ---------------------------
-LOCAL_LIBS      =
+LOCAL_LIBS      = 
 
 
 C_SOURCES       = $(filter     %.c, $(SOURCES))
