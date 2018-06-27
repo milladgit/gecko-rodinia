@@ -3,7 +3,7 @@ include ../../common/make.config
 # GECKO_HOME?=$(HOME)/gecko
 
 CC := pgc++
-CCFLAGS := -mp -acc -ta=tesla -Minfo=accel -O3 -std=c++11 -Mcuda
+CCFLAGS := -mp -acc -ta=tesla,multicore -Minfo=accel -O3 -std=c++11 -Mcuda
 
 # CCFLAGS += -g -O0
 
