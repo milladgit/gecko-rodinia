@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <sys/time.h>
+#include <omp.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // declaration, forward
@@ -137,6 +138,8 @@ runTest( int argc, char** argv)
 //	#pragma acc data copy(input_itemsets[0:max_rows*max_cols]) \
 //	    copyin(referrence[0:max_rows*max_cols])
 	{
+		double time;
+		time = omp_get_wtime();
 
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(input_itemsets)
 	#pragma acc parallel loop
@@ -181,7 +184,10 @@ runTest( int argc, char** argv)
 	      }
 #pragma gecko region end
 	}
-	
+
+		time = omp_get_wtime() - time;
+		printf("Total time: %.2fus\n", time*1E6);
+
 	} /* end pragma acc data */
 
 #pragma gecko region pause at(exec_loc)
