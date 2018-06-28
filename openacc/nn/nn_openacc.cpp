@@ -11,6 +11,7 @@
 #include <float.h>
 #include <math.h>
 #include <vector>
+#include <omp.h>
 
 #define min( a, b )			a > b ? b : a
 #define ceilDiv( a, b )		( a + b - 1 ) / b
@@ -92,6 +93,9 @@ int main(int argc, char* argv[])
 #pragma gecko memory allocate(distances[0:numRecords]) type(float) location(exec_loc)
 #pragma gecko memory allocate(locations[0:numRecords]) type(LatLong) location(exec_loc)
 
+	double time;
+	time = omp_get_wtime();
+
     for (i=0; i<numRecords; i++)
         locations[i] = locations_vec[i];
 
@@ -114,6 +118,10 @@ int main(int argc, char* argv[])
 
 	// find the resultsCount least distances
     findLowest(records,distances,numRecords,resultsCount);
+
+	time = omp_get_wtime() - time;
+	printf("Total time: %.2f\n", time);
+
 
     // print out results
     if (!quiet)
