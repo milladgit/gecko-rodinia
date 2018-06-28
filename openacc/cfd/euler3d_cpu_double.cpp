@@ -487,10 +487,11 @@ int main(int argc, char** argv)
 	double end = omp_get_wtime();
 	std::cout  << (end-start)  / iterations << " seconds per iteration" << std::endl;
 
+#if 0
 	std::cout << "Saving solution..." << std::endl;
 	dump(variables, nel, nelr);
 	std::cout << "Saved solution..." << std::endl;
-
+#endif
 
 	std::cout << "Cleaning up..." << std::endl;
 	dealloc<double>(areas);
