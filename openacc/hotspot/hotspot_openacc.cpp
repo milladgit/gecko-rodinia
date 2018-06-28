@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <omp.h>
 using namespace std;
 #define STR_SIZE	256
 
@@ -235,8 +236,12 @@ int main(int argc, char **argv)
 	read_input(temp, grid_rows, grid_cols, tfile);
 	read_input(power, grid_rows, grid_cols, pfile);
 
+	double time;
 	printf("Start computing the transient temperature\n");
+	time = omp_get_wtime();
 	compute_tran_temp(result,sim_time, temp, power, grid_rows, grid_cols);
+	time = omp_get_wtime() - time;
+	printf("Total time: %.2fus\n", time * 1E6);
 	printf("Ending simulation\n");
 	/* output results	*/
 #ifdef VERBOSE
