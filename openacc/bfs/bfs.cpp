@@ -32,11 +32,19 @@ fprintf(stderr,"Usage: %s <input_file>\n", argv[0]);
 ////////////////////////////////////////////////////////////////////////////////
 int main( int argc, char** argv) 
 {
+	double totalTime;
+	totalTime = omp_get_wtime();
+
 #pragma gecko config env
 
 	no_of_nodes=0;
 	edge_list_size=0;
 	BFSGraph( argc, argv);
+	
+	totalTime = omp_get_wtime() - totalTime;
+	printf("Total time: %.2fus\n", totalTime*1E6);
+
+	return 0;
 }
 
 
@@ -123,6 +131,8 @@ void BFSGraph( int argc, char** argv)
 //	create(h_graph_nodes[0:no_of_nodes], h_graph_edges[0:edge_list_size]) \
 //	copyout(h_cost[0:no_of_nodes])
 {
+	double time = omp_get_wtime();
+
 //	#pragma acc update device(h_graph_nodes[0:no_of_nodes]) async(TRANSFER_GRAPH_NODE)
 
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_updating_graph_mask,h_graph_mask,h_graph_visited)
@@ -210,6 +220,9 @@ void BFSGraph( int argc, char** argv)
 		k++;
 	}
 	while(stop);
+
+	time = omp_get_wtime() - time;
+	printf("Total time for computation: %.2f\n", time*1E6);
 
 } /* end acc data */
 
