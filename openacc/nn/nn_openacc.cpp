@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
     findLowest(records,distances,numRecords,resultsCount);
 
 	time = omp_get_wtime() - time;
-	printf("Total time: %.2f\n", time);
+	printf("Total time: %.2fus\n", time*1E6);
 
 
     // print out results
