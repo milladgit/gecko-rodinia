@@ -93,11 +93,12 @@ void run(int argc, char** argv)
     int *src, *dst, *temp;
     int min;
 
+    pin_stats_reset();
+
     dst = result;
 //    src = new int[cols];
 #pragma gecko memory allocate(src[0:cols]) type(int) location(exec_loc)
 
-    pin_stats_reset();
 //    #pragma acc data create(src[0:cols]) copy(dst[0:cols], data[0:rows*cols])
 
     {
