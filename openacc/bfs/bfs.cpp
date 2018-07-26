@@ -14,11 +14,16 @@ static char *exec_policy_chosen = "static";
 
 
 //Structure to hold a node information
-struct Node
+typedef struct Node
 {
 	int starting;
 	int no_of_edges;
-};
+} Node;
+
+G_GENERATOR(Node);
+#ifndef gecko_bool
+G_GENERATOR(bool);
+#endif
 
 void BFSGraph(int argc, char** argv);
 
@@ -57,7 +62,7 @@ void BFSGraph( int argc, char** argv)
     char *input_f;
 
     // int* h_cost;
-    int* h_graph_edges;
+    gecko_int h_graph_edges;
 	
 	if(argc!=2){
 	Usage(argc, argv);
@@ -86,17 +91,17 @@ void BFSGraph( int argc, char** argv)
 //	bool *h_graph_visited = (bool*) malloc(sizeof(bool)*no_of_nodes);
 //	int  *h_cost = (int*) malloc(sizeof(int)*no_of_nodes);
 
-	Node* h_graph_nodes;
-	bool *h_graph_mask;
-	bool *h_updating_graph_mask;
-	bool *h_graph_visited;
-	int  *h_cost;
+	gecko_Node h_graph_nodes;
+	gecko_bool h_graph_mask;
+	gecko_bool h_updating_graph_mask;
+	gecko_bool h_graph_visited;
+	gecko_int  h_cost;
 
-#pragma gecko memory allocate(h_graph_nodes[0:no_of_nodes]) type(Node) location(exec_loc)
-#pragma gecko memory allocate(h_graph_mask[0:no_of_nodes]) type(bool) location(exec_loc)
-#pragma gecko memory allocate(h_updating_graph_mask[0:no_of_nodes]) type(bool) location(exec_loc)
-#pragma gecko memory allocate(h_graph_visited[0:no_of_nodes]) type(bool) location(exec_loc)
-#pragma gecko memory allocate(h_cost[0:no_of_nodes]) type(int) location(exec_loc)
+#pragma gecko memory allocate(h_graph_nodes[0:no_of_nodes]) type(gecko_Node) location(exec_loc)
+#pragma gecko memory allocate(h_graph_mask[0:no_of_nodes]) type(gecko_bool) location(exec_loc)
+#pragma gecko memory allocate(h_updating_graph_mask[0:no_of_nodes]) type(gecko_bool) location(exec_loc)
+#pragma gecko memory allocate(h_graph_visited[0:no_of_nodes]) type(gecko_bool) location(exec_loc)
+#pragma gecko memory allocate(h_cost[0:no_of_nodes]) type(gecko_int) location(exec_loc)
 
 	int start, edgeno;   
 	// initalize the memory
@@ -115,7 +120,7 @@ void BFSGraph( int argc, char** argv)
 	
 	int id,cost;
 //	h_graph_edges = (int*) malloc(sizeof(int)*edge_list_size);
-#pragma gecko memory allocate(h_graph_edges[0:edge_list_size]) type(int) location(exec_loc)
+#pragma gecko memory allocate(h_graph_edges[0:edge_list_size]) type(gecko_int) location(exec_loc)
 	for(int i=0; i < edge_list_size ; i++)
 	{
 		fscanf(fp,"%d",&id);
@@ -135,7 +140,7 @@ void BFSGraph( int argc, char** argv)
 
 //	#pragma acc update device(h_graph_nodes[0:no_of_nodes]) async(TRANSFER_GRAPH_NODE)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_updating_graph_mask,h_graph_mask,h_graph_visited)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
 	#pragma acc parallel loop
 	for( unsigned int i = 0; i < no_of_nodes; i++)
 	{
@@ -146,8 +151,8 @@ void BFSGraph( int argc, char** argv)
 #pragma gecko region end
 
 
-#pragma gecko region at(exec_loc) exec_pol("any") variable_list(h_updating_graph_mask,h_graph_mask,h_graph_visited)
-	#pragma acc serial num_gangs(1) vector_length(1) present(h_graph_mask[0:no_of_nodes],h_graph_visited[0:no_of_nodes])
+#pragma gecko region at(exec_loc) exec_pol("any")
+	#pragma acc parallel loop num_gangs(1) vector_length(1)
 	for(int i=0;i<1;i++)
 	{
 	    //set the source node as true in the mask
@@ -158,7 +163,7 @@ void BFSGraph( int argc, char** argv)
 
 	// allocate mem for the result on host side
 	// h_cost = (int*) malloc( sizeof(int)*no_of_nodes);
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_cost)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
 	#pragma acc parallel loop
 	for(int i=0;i<no_of_nodes;i++) {
 		h_cost[i]=-1;
@@ -182,7 +187,7 @@ void BFSGraph( int argc, char** argv)
 		//if no thread changes this value then the loop stops
 		stop=false;
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_graph_mask,h_cost,h_graph_nodes,h_graph_visited,h_updating_graph_mask,h_graph_edges)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
 		#pragma acc parallel loop independent
 		for(int tid = 0; tid < no_of_nodes; tid++ )
 		{
@@ -194,7 +199,7 @@ void BFSGraph( int argc, char** argv)
 					int id = h_graph_edges[i];
 					bool visited = h_graph_visited[id];
 					if(!visited) {
-#pragma acc atomic write
+//#pragma acc atomic write
 						h_cost[id]=h_cost[tid]+1;
 
 						h_updating_graph_mask[id]=true;
@@ -204,7 +209,7 @@ void BFSGraph( int argc, char** argv)
 		}
 #pragma gecko region end
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(h_graph_mask,h_cost,h_graph_nodes,h_graph_visited,h_updating_graph_mask)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
 		#pragma acc parallel loop vector reduction(||:stop) independent
   		for(int tid=0; tid< no_of_nodes ; tid++ )
 		{
@@ -244,12 +249,14 @@ void BFSGraph( int argc, char** argv)
 //	free( h_graph_visited);
 //	free( h_cost);
 
-#pragma gecko memory free(h_graph_nodes)
-#pragma gecko memory free(h_graph_edges)
-#pragma gecko memory free(h_graph_mask)
-#pragma gecko memory free(h_updating_graph_mask)
-#pragma gecko memory free(h_graph_visited)
-#pragma gecko memory free(h_cost)
+//#pragma gecko memory free(h_graph_nodes)
+//#pragma gecko memory free(h_graph_edges)
+//#pragma gecko memory free(h_graph_mask)
+//#pragma gecko memory free(h_updating_graph_mask)
+//#pragma gecko memory free(h_graph_visited)
+//#pragma gecko memory free(h_cost)
+
+#pragma gecko memory freeobj(h_graph_nodes, h_graph_edges, h_graph_mask, h_updating_graph_mask, h_graph_visited, h_cost)
 
 }
 
