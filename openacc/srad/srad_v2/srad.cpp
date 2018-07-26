@@ -15,7 +15,7 @@
 static char *exec_loc = "LocB";
 static char *exec_policy_chosen = "static";
 
-void random_matrix(float *I, int rows, int cols);
+void random_matrix(gecko_float I, int rows, int cols);
 
 void usage(int argc, char **argv)
 {
@@ -33,17 +33,20 @@ void usage(int argc, char **argv)
 }
 
 int main(int argc, char* argv[])
-{   
+{
 	int rows, cols, size_I, size_R, niter = 10, iter, k;
-    float *I, *J, q0sqr, sum, sum2, tmp, meanROI,varROI ;
+    float q0sqr, sum, sum2, tmp, meanROI,varROI ;
 	float Jc, G2, L, num, den, qsqr;
-	int *iN,*iS,*jE,*jW;
-	float *dN,*dS,*dW,*dE;
+//	int *iN,*iS,*jE,*jW;
+	gecko_int iN,iS,jE,jW;
+//	float *dN,*dS,*dW,*dE;
+	gecko_float dN,dS,dW,dE;
 	int r1, r2, c1, c2;
 	float cN,cS,cW,cE;
-	float *c, D;
+	float D;
 	float lambda;
 	int i, j;
+	gecko_float I, J, c;
 
 	if (argc == 9)
 	{
@@ -77,36 +80,36 @@ int main(int argc, char* argv[])
 //	I = (float *)malloc( size_I * sizeof(float) );
 //	J = (float *)malloc( size_I * sizeof(float) );
 //	c  = (float *)malloc(sizeof(float)* size_I) ;
-#pragma gecko memory allocate(I[0:size_I]) type(float) location(exec_loc)
-#pragma gecko memory allocate(J[0:size_I]) type(float) location(exec_loc)
-#pragma gecko memory allocate(c[0:size_I]) type(float) location(exec_loc)
+#pragma gecko memory allocate(I[0:size_I]) type(gecko_float) location(exec_loc)
+#pragma gecko memory allocate(J[0:size_I]) type(gecko_float) location(exec_loc)
+#pragma gecko memory allocate(c[0:size_I]) type(gecko_float) location(exec_loc)
 
 
 //	iN = (int *)malloc(sizeof(int) * rows) ;
 //	iS = (int *)malloc(sizeof(int) * rows) ;
 //	jW = (int *)malloc(sizeof(int) * cols) ;
 //	jE = (int *)malloc(sizeof(int) * cols) ;
-#pragma gecko memory allocate(iN[0:size_I]) type(int) location(exec_loc)
-#pragma gecko memory allocate(iS[0:size_I]) type(int) location(exec_loc)
-#pragma gecko memory allocate(jW[0:size_I]) type(int) location(exec_loc)
-#pragma gecko memory allocate(jE[0:size_I]) type(int) location(exec_loc)
+#pragma gecko memory allocate(iN[0:size_I]) type(gecko_int) location(exec_loc)
+#pragma gecko memory allocate(iS[0:size_I]) type(gecko_int) location(exec_loc)
+#pragma gecko memory allocate(jW[0:size_I]) type(gecko_int) location(exec_loc)
+#pragma gecko memory allocate(jE[0:size_I]) type(gecko_int) location(exec_loc)
 
 
 //	dN = (float *)malloc(sizeof(float)* size_I) ;
 //    dS = (float *)malloc(sizeof(float)* size_I) ;
 //    dW = (float *)malloc(sizeof(float)* size_I) ;
 //    dE = (float *)malloc(sizeof(float)* size_I) ;
-#pragma gecko memory allocate(dN[0:size_I]) type(float) location(exec_loc)
-#pragma gecko memory allocate(dS[0:size_I]) type(float) location(exec_loc)
-#pragma gecko memory allocate(dW[0:size_I]) type(float) location(exec_loc)
-#pragma gecko memory allocate(dE[0:size_I]) type(float) location(exec_loc)
+#pragma gecko memory allocate(dN[0:size_I]) type(gecko_float) location(exec_loc)
+#pragma gecko memory allocate(dS[0:size_I]) type(gecko_float) location(exec_loc)
+#pragma gecko memory allocate(dW[0:size_I]) type(gecko_float) location(exec_loc)
+#pragma gecko memory allocate(dE[0:size_I]) type(gecko_float) location(exec_loc)
 
 //#pragma acc data create(iN[0:rows],iS[0:rows],jW[0:cols],jE[0:cols]) \
 //    create(dN[0:size_I],dS[0:size_I],dW[0:size_I],dE[0:size_I],c[0:size_I]) \
 //    create(I[0:size_I]) copyout(J[0:size_I])
 {
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(iN,iS)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
     #pragma acc parallel loop
     for (int i=0; i< rows; i++) {
         iN[i] = i-1;
@@ -115,7 +118,7 @@ int main(int argc, char* argv[])
 #pragma gecko region end
 //#pragma gecko region pause at(exec_loc)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(jW,jE)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
     #pragma acc parallel loop
     for (int j=0; j< cols; j++) {
         jW[j] = j-1;
@@ -124,7 +127,7 @@ int main(int argc, char* argv[])
 #pragma gecko region end
 //#pragma gecko region pause at(exec_loc)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(iN,iS,jW,jE)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
     #pragma acc serial
 	for(int i=0;i<1;i++)
     {
@@ -144,7 +147,7 @@ int main(int argc, char* argv[])
 
 #pragma gecko region pause at(exec_loc)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(I,J)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
     #pragma acc parallel loop
     for (k = 0;  k < size_I; k++ ) {
      	J[k] = (float)exp(I[k]) ;
@@ -160,9 +163,9 @@ int main(int argc, char* argv[])
 
 #ifdef ITERATION
 	for (iter=0; iter< niter; iter++){
-#endif        
+#endif
 		sum=0; sum2=0;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(I,J)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
 		#pragma acc parallel loop collapse(2) reduction(+:sum,sum2)
 		for (i=r1; i<=r2; i++) {
             for (j=c1; j<=c2; j++) {
@@ -179,23 +182,23 @@ int main(int argc, char* argv[])
         q0sqr   = varROI / (meanROI*meanROI);
 
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(I,J,c,dN,dS,dW,dE,iN,iS,jW,jE)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
         #pragma acc parallel loop collapse(2) independent private(k)
 		for (int i = 0 ; i < rows ; i++) {
-            for (int j = 0; j < cols; j++) { 
-		
+            for (int j = 0; j < cols; j++) {
+
 				float dNk, dSk, dWk, dEk, ck;
-				
+
 				k = i * cols + j;
 				Jc = J[k];
- 
+
 				// directional derivates
                 dNk = J[iN[i] * cols + j] - Jc;
                 dSk = J[iS[i] * cols + j] - Jc;
                 dWk = J[i * cols + jW[j]] - Jc;
                 dEk = J[i * cols + jE[j]] - Jc;
-			
-                G2 = (dNk*dNk + dSk*dSk 
+
+                G2 = (dNk*dNk + dSk*dSk
                     + dWk*dWk + dEk*dEk) / (Jc*Jc);
 
    		        L = (dNk + dSk + dWk + dEk) / Jc;
@@ -203,30 +206,30 @@ int main(int argc, char* argv[])
 				num  = (0.5*G2) - ((1.0/16.0)*(L*L)) ;
                 den  = 1 + (.25*L);
                 qsqr = num/(den*den);
- 
+
                 // diffusion coefficent (equ 33)
                 den = (qsqr-q0sqr) / (q0sqr * (1+q0sqr)) ;
                 ck = 1.0 / (1.0+den) ;
-                
+
                 // saturate diffusion coefficent
                 if (ck < 0) {c[k] = 0;}
                 else if (ck >= 1) {c[k] = 1;}
-                
+
                 dN[k] = dNk, dS[k] = dSk, dW[k] = dWk, dE[k] = dEk;
-   
+
 			}
     	}
 #pragma gecko region end
 //#pragma gecko region pause at(exec_loc)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(I,J,c,dN,dS,dW,dE,iS,jE)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
     	#pragma acc parallel loop collapse(2) independent private(k)
 		for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {        
+            for (int j = 0; j < cols; j++) {
 
                 // current index
                 k = i * cols + j;
-                
+
                 // diffusion coefficent
 					cN = c[k];
 					cS = c[iS[i] * cols + j];
@@ -235,7 +238,7 @@ int main(int argc, char* argv[])
 
                 // divergence (equ 58)
                 D = cN * dN[k] + cS * dS[k] + cW * dW[k] + cE * dE[k];
-                
+
                 // image update (equ 61)
                 J[k] = J[k] + 0.25*lambda*D;
             }
@@ -259,12 +262,12 @@ int main(int argc, char* argv[])
 	  for( int i = 0 ; i < rows ; i++){
 		for ( int j = 0 ; j < cols ; j++){
 
-         printf("%.5f ", J[i * cols + j]); 
-    
+         printf("%.5f ", J[i * cols + j]);
+
 		}
-         printf("\n"); 
+         printf("\n");
    }
-#endif 
+#endif
 
 	printf("Computation Done\n");
 
@@ -272,27 +275,28 @@ int main(int argc, char* argv[])
 //	free(J);
 //	free(iN); free(iS); free(jW); free(jE);
 //    free(dN); free(dS); free(dW); free(dE);
-#pragma gecko memory free(I)
-#pragma gecko memory free(J)
-#pragma gecko memory free(iN)
-#pragma gecko memory free(iS)
-#pragma gecko memory free(jW)
-#pragma gecko memory free(jE)
-#pragma gecko memory free(dN)
-#pragma gecko memory free(dS)
-#pragma gecko memory free(dW)
-#pragma gecko memory free(dE)
+//#pragma gecko memory free(I)
+//#pragma gecko memory free(J)
+//#pragma gecko memory free(iN)
+//#pragma gecko memory free(iS)
+//#pragma gecko memory free(jW)
+//#pragma gecko memory free(jE)
+//#pragma gecko memory free(dN)
+//#pragma gecko memory free(dS)
+//#pragma gecko memory free(dW)
+//#pragma gecko memory free(dE)
+#pragma gecko memory freeobj(I,J,iN,iS,jW,jE,dN,dS,dW,dE,c)
 
 
 //	free(c);
-#pragma gecko memory free(c)
+//#pragma gecko memory free(c)
 	return 0;
 }
 
 
 
 
-void random_matrix(float *I, int rows, int cols){
+void random_matrix(gecko_float I, int rows, int cols){
 
 	srand(7);
 	
