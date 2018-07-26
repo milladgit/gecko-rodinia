@@ -39,7 +39,7 @@ typedef struct record
 } Record;
 
 int loadData(char *filename,std::vector<Record> &records,std::vector<LatLong> &locations);
-void findLowest(std::vector<Record> &records,float *distances,int numRecords,int topN);
+void findLowest(std::vector<Record> &records, gecko_float distances,int numRecords,int topN);
 void printUsage();
 int parseCommandline(int argc, char *argv[], char* filename,int *r,float *lat,float *lng,
                      int *q, int *t, int *p, int *d);
@@ -47,6 +47,7 @@ int parseCommandline(int argc, char *argv[], char* filename,int *r,float *lat,fl
 
 static char *exec_loc = "LocB";
 static char *exec_policy_chosen = "static";
+G_GENERATOR(LatLong);
 
 /**
 * This program finds the k-nearest neighbors
@@ -64,10 +65,12 @@ int main(int argc, char* argv[])
 
   std::vector<Record> records;
 	std::vector<LatLong> locations_vec;
-  LatLong *locations;
-	char filename[100];
-	int resultsCount=10;
-  float *distances;
+  //LatLong *locations;
+    gecko_LatLong locations;
+    char filename[100];
+    int resultsCount=10;
+//    float *distances;
+	gecko_float distances;
 
     // parse command line
     if (parseCommandline(argc, argv, filename,&resultsCount,&lat,&lng,
@@ -90,8 +93,8 @@ int main(int argc, char* argv[])
 	*/
 //	distances = (float *)malloc(sizeof(float) * numRecords);
 //	locations = (LatLong *) malloc(sizeof(LatLong) * numRecords);
-#pragma gecko memory allocate(distances[0:numRecords]) type(float) location(exec_loc)
-#pragma gecko memory allocate(locations[0:numRecords]) type(LatLong) location(exec_loc)
+#pragma gecko memory allocate(distances[0:numRecords]) type(gecko_float) location(exec_loc)
+#pragma gecko memory allocate(locations[0:numRecords]) type(gecko_LatLong) location(exec_loc)
 
 	double time;
 	time = omp_get_wtime();
@@ -105,8 +108,9 @@ int main(int argc, char* argv[])
      * Execute kernel
      */
 //    #pragma acc kernels copyin(locations[0:numRecords]) copyout(distances[0:numRecords])
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(distances,locations)
-	#pragma acc parallel loop independent copyin(locations[0:numRecords]) copyout(distances[0:numRecords])
+//#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(distances,locations)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+	#pragma acc parallel loop independent
 	for (i=0; i<numRecords; i++) {
       LatLong latlong = locations[i];
       distances[i] = (float)sqrt((lat-latlong.lat)*(lat-latlong.lat)+(lng-latlong.lng)*(lng-latlong.lng));
@@ -130,8 +134,8 @@ int main(int argc, char* argv[])
     }
 //    free(distances);
 //    free(locations);
-#pragma gecko memory free(distances)
-#pragma gecko memory free(locations)
+//#pragma gecko memory free(distances)
+//#pragma gecko memory free(locations)
 
 }
 
@@ -189,7 +193,7 @@ int loadData(char *filename,std::vector<Record> &records,std::vector<LatLong> &l
     return recNum;
 }
 
-void findLowest(std::vector<Record> &records,float *distances,int numRecords,int topN){
+void findLowest(std::vector<Record> &records, gecko_float distances,int numRecords,int topN){
   int i,j;
   float val;
   int minLoc;
