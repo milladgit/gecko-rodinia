@@ -1,4 +1,3 @@
-#include "geckoRuntime.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -31,24 +30,24 @@ static char *exec_policy_chosen = "static";
 void
 init(int argc, char** argv)
 {
-    if(argc==3) {
-        cols = atoi(argv[1]);
-        rows = atoi(argv[2]);
-    } else {
-        printf("Usage: pathfiner width num_of_steps\n");
-        exit(0);
-    }
+	if(argc==3){
+		cols = atoi(argv[1]);
+		rows = atoi(argv[2]);
+	}else{
+                printf("Usage: pathfiner width num_of_steps\n");
+                exit(0);
+        }
 //	data = new int[rows*cols];
 //	result = new int[cols];
 //#pragma gecko memory allocate(data[0:rows*cols]) type(int) location(exec_loc)
 //#pragma gecko memory allocate(result[0:cols]) type(int) location(exec_loc)
-    geckoMemoryInternalTypeDeclare(data, sizeof(int), rows*cols, exec_loc, GECKO_DISTANCE_NOT_SET);
-    geckoMemoryInternalTypeDeclare(result, sizeof(int), cols, exec_loc, GECKO_DISTANCE_NOT_SET);
+#pragma gecko memory allocate(data[0:rows*cols]) type(gecko_int) location(exec_loc)
+#pragma gecko memory allocate(result[0:cols]) type(gecko_int) location(exec_loc)
 
-    int seed = M_SEED;
-    srand(seed);
+	int seed = M_SEED;
+	srand(seed);
 
-    for (int i = 0; i < rows; i++)
+	for (int i = 0; i < rows; i++)
     {
         for (int j = 0; j < cols; j++)
         {
@@ -69,10 +68,10 @@ init(int argc, char** argv)
 #endif
 }
 
-void
+void 
 fatal(char *s)
 {
-    fprintf(stderr, "error: %s\n", s);
+	fprintf(stderr, "error: %s\n", s);
 
 }
 
@@ -89,66 +88,48 @@ int main(int argc, char** argv)
 
 void run(int argc, char** argv)
 {
-    geckoLoadConfigWithEnv();
+#pragma gecko config env
+
     init(argc, argv);
 
     unsigned long long cycles;
 
 //    int *src, *dst, *temp;
-    gecko_int src, dst, temp;
+	gecko_int src, dst, temp;
     int min;
 
     pin_stats_reset();
 
     dst = result;
 //    src = new int[cols];
-    geckoMemoryInternalTypeDeclare(src, sizeof(int), cols, exec_loc, GECKO_DISTANCE_NOT_SET);
+#pragma gecko memory allocate(src[0:cols]) type(gecko_int) location(exec_loc)
 
 //    #pragma acc data create(src[0:cols]) copy(dst[0:cols], data[0:rows*cols])
 
     {
-        for (int t = 0; t < rows-1; t++) {
-            temp = src;
-            src = dst;
-            dst = temp;
+    for (int t = 0; t < rows-1; t++) {
+        temp = src;
+        src = dst;
+        dst = temp;
 
 //#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(src,dst,data)
 //        #pragma acc parallel loop independent
-            {
-                int *beginLoopIndex=NULL, *endLoopIndex=NULL, jobCount, devCount, devIndex;
-                GeckoLocation **dev = NULL;
-                int ranges_count = 0;
-                float *ranges = NULL;
-                int var_count = 0;
-                void **var_list = NULL;
-                GeckoError err = geckoRegion(exec_policy_chosen, exec_loc, 0, cols, 1, 0, &devCount, &beginLoopIndex, &endLoopIndex, &dev, ranges_count, ranges, var_count, var_list);
-                jobCount = devCount;
-                if(err != GECKO_ERR_TOTAL_ITERATIONS_ZERO) {
-                    #pragma omp parallel num_threads(jobCount)
-                    {
-                        int devIndex = omp_get_thread_num();
-                        if(dev[devIndex] != NULL) {
-                            int beginLI = beginLoopIndex[devIndex], endLI = endLoopIndex[devIndex];
-                            int asyncID = dev[devIndex]->getAsyncID();
-#pragma acc parallel loop independent deviceptr() async(asyncID)
-                            for(int n = beginLI; n < endLI; n++) {
-                                min = src[n];
-                                if (n > 0)
-                                    min = MIN(min, src[n-1]);
-                                if (n < cols-1)
-                                    min = MIN(min, src[n+1]);
-                                dst[n] = wall(t+1,n)+min;
-                            }
-                        } // end of if(dev[devIndex]!=NULL)
-                    } // end of OpenMP pragma
-                } // end of checking: err != GECKO_ERR_TOTAL_ITERATIONS_ZERO
-                geckoFreeRegionTemp(beginLoopIndex, endLoopIndex, devCount, dev, var_list);
-            }
-
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma acc parallel loop independent
+        for(int n = 0; n < cols; n++){
+          min = src[n];
+          if (n > 0)
+            min = MIN(min, src[n-1]);
+          if (n < cols-1)
+            min = MIN(min, src[n+1]);
+          dst[n] = wall(t+1,n)+min;
         }
+#pragma gecko region end
+
+    }
     } /* end pragma acc data */
 
-    geckoWaitOnLocation(exec_loc);
+#pragma gecko region pause at(exec_loc)
 
 
     pin_stats_pause(cycles);
@@ -158,13 +139,13 @@ void run(int argc, char** argv)
 
     for (int i = 0; i < cols; i++)
 
-        printf("%d ",data[i]) ;
+            printf("%d ",data[i]) ;
 
     printf("\n") ;
 
     for (int i = 0; i < cols; i++)
 
-        printf("%d ",dst[i]) ;
+            printf("%d ",dst[i]) ;
 
     printf("\n") ;
 
