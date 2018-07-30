@@ -87,7 +87,7 @@ void dealloc_int(gecko_int array) {
 template <typename T>
 void copy(T* dst, T* src, int N)
 {
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) 
 	#pragma acc kernels
 	for(int i = 0; i < N; i++)
 	{
@@ -98,13 +98,14 @@ void copy(T* dst, T* src, int N)
 
 void copy_double(gecko_double dst, gecko_double src, int N)
 {
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(dst,src)
 #pragma acc kernels
 	for(int i = 0; i < N; i++)
 	{
 		dst[i] = src[i];
 	}
 #pragma gecko region end
+#pragma gecko region pause at(exec_loc)
 }
 
 
@@ -149,7 +150,7 @@ double3 ff_flux_contribution_density_energy;
 
 void initialize_variables(int nelr, gecko_double variables)
 {
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(variables)
 	#pragma acc parallel loop collapse(2) independent
 	for(int i = 0; i < nelr; i++)
 	{
@@ -205,7 +206,7 @@ inline double compute_speed_of_sound(double& density, double& pressure)
 
 void compute_step_factor(int nelr, gecko_double variables, gecko_double areas, gecko_double step_factors)
 {
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(variables,areas,step_factors)
 	#pragma acc parallel loop independent
 	for(int i = 0; i < nelr; i++)
 	{
@@ -239,7 +240,7 @@ void compute_flux(int nelr, gecko_int elements_surrounding_elements, gecko_doubl
 {
 	const double smoothing_coefficient = double(0.2f);
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(elements_surrounding_elements,normals,variables,fluxes)
 #pragma acc parallel loop independent
 	for(int i = 0; i < nelr; i++)
 	{
@@ -374,7 +375,7 @@ void compute_flux(int nelr, gecko_int elements_surrounding_elements, gecko_doubl
 
 void time_step(int j, int nelr, gecko_double old_variables, gecko_double variables, gecko_double step_factors, gecko_double fluxes)
 {
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(old_variables,variables,step_factors,fluxes)
     #pragma acc parallel loop independent
     for(int i = 0; i < nelr; i++)
 	{
