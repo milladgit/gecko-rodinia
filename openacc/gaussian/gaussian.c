@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
         printf("Array b is: \n");
         PrintAry(b, Size);
     }
-    BackSub();
+//    BackSub();
     if (verbose) {
         printf("The final solution is: \n");
         PrintAry(finalVec,Size);
@@ -187,11 +187,13 @@ void InitPerRun(gecko_float m)
 void Fan1(gecko_float m, gecko_float a, int Size, int t)
 {   
 	int i;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(a)
 	#pragma acc parallel loop
 	for (i=0; i<Size-1-t; i++)
 		m[Size*(i+t+1)+t] = a[Size*(i+t+1)+t] / a[Size*t+t];
 #pragma gecko region end
+	
+#pragma gecko region pause at(exec_loc)
 }
 
 /*-------------------------------------------------------
@@ -202,7 +204,7 @@ void Fan1(gecko_float m, gecko_float a, int Size, int t)
 void Fan2(gecko_float m, gecko_float a, gecko_float b,int Size, int j1, int t)
 {
 	int i,j;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(a,m)
 	#pragma acc parallel loop
 	for (i=0; i<Size-1-t; i++) {
 	    #pragma acc loop
@@ -211,11 +213,15 @@ void Fan2(gecko_float m, gecko_float a, gecko_float b,int Size, int j1, int t)
 	}
 #pragma gecko region end
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+//#pragma gecko region pause at(exec_loc)
+
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(a,m,b)
 	#pragma acc parallel loop 
 	for (i=0; i<Size-1-t; i++)
 		b[i+1+t] -= m[Size*(i+1+t)+t] * b[t];
 #pragma gecko region end
+
+#pragma gecko region pause at(exec_loc)
 }
 
 /*------------------------------------------------------
