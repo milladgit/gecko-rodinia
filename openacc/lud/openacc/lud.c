@@ -35,7 +35,7 @@ static struct option long_options[] = {
 };
 
 extern void
-lud_openacc(float *m, int matrix_dim);
+lud_openacc(gecko_float m, int matrix_dim);
 
 char *exec_loc = "LocB";
 char *exec_policy_chosen = "static";
@@ -50,7 +50,7 @@ main ( int argc, char *argv[] )
   int opt, option_index=0;
   func_ret_t ret;
   const char *input_file = NULL;
-  float *m, *mm;
+  gecko_float m, mm;
   stopwatch sw;
 
   while ((opt = getopt_long(argc, argv, "::vs:i:n:", 
@@ -87,14 +87,15 @@ main ( int argc, char *argv[] )
 
   if (input_file) {
       printf("Reading matrix from file %s\n", input_file);
-      ret = create_matrix_from_file(&m, input_file, &matrix_dim);
+      float *m2;
+      ret = create_matrix_from_file(&m2, input_file, &matrix_dim);
       if (ret != RET_SUCCESS) {
-          m = NULL;
+          m2 = NULL;
           fprintf(stderr, "error create matrix from file %s\n", input_file);
           exit(EXIT_FAILURE);
       }
 
-	  float *m2;
+#if 0
 #pragma gecko memory allocate(m2[0:matrix_dim*matrix_dim]) type(gecko_float) location(exec_loc)
 	  for(int i=0;i<matrix_dim;i++) {
 		  for(int j=0;j<matrix_dim;j++) {
@@ -104,17 +105,21 @@ main ( int argc, char *argv[] )
 	  }
 	  free(m);
 	  m = m2;
+#endif
 
   } else {
     printf("No input file specified!\n");
     exit(EXIT_FAILURE);
-  } 
+  }
 
+
+#if 0
   if (do_verify){
     printf("Before LUD\n");
     print_matrix(m, matrix_dim);
     matrix_duplicate(m, &mm, matrix_dim);
   }
+#endif
 
 
       stopwatch_start(&sw);
@@ -122,6 +127,7 @@ main ( int argc, char *argv[] )
       stopwatch_stop(&sw);
       printf("Time consumed(ms): %lf\n", 1000*get_interval_by_sec(&sw));
 
+#if 0
   if (do_verify){
     printf("After LUD\n");
     print_matrix(m, matrix_dim);
@@ -129,6 +135,7 @@ main ( int argc, char *argv[] )
     lud_verify(mm, m, matrix_dim); 
     free(mm);
   }
+#endif
 
 //  free(m);
 #pragma gecko memory freeobj(m)

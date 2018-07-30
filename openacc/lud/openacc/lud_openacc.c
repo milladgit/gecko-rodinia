@@ -3,7 +3,7 @@
 extern char *exec_loc;
 extern char *exec_policy_chosen;
 
-void lud_openacc(float *a, int size)
+void lud_openacc(gecko_float a, int size)
 {
      int i,j,k;
      float sum;
