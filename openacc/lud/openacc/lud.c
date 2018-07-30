@@ -107,6 +107,15 @@ main ( int argc, char *argv[] )
 	  m = m2;
 #endif
 
+#pragma gecko memory allocate(m[0:matrix_dim*matrix_dim]) type(gecko_float) location(exec_loc)
+	  for(int i=0;i<matrix_dim;i++) {
+		  for(int j=0;j<matrix_dim;j++) {
+			  int index = i*matrix_dim+j;
+			  m[index] = m2[index];
+		  }
+	  }
+
+
   } else {
     printf("No input file specified!\n");
     exit(EXIT_FAILURE);
