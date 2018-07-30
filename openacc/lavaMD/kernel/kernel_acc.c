@@ -110,7 +110,7 @@ void  kernel_acc(	par_str par,
 	//======================================================================================================================================================150
 
 #pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(box,rv,qv,fv)
-	#pragma acc parallel loop present(box[0:dim.number_boxes],rv[0:dim.space_elem],qv[0:dim.space_elem],fv[0:dim.space_elem])
+	#pragma acc parallel loop 
 	for(l=0; l<dim.number_boxes; l++){
 
 
