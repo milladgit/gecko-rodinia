@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
      */
 //    #pragma acc kernels copyin(locations[0:numRecords]) copyout(distances[0:numRecords])
 //#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(distances,locations)
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(distances,locations)
 	#pragma acc parallel loop independent
 	for (i=0; i<numRecords; i++) {
       LatLong latlong = locations[i];

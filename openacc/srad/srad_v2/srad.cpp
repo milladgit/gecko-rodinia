@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 //    create(I[0:size_I]) copyout(J[0:size_I])
 {
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(iN,iS)
     #pragma acc parallel loop
     for (int i=0; i< rows; i++) {
         iN[i] = i-1;
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 #pragma gecko region end
 //#pragma gecko region pause at(exec_loc)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(jW,jE)
     #pragma acc parallel loop
     for (int j=0; j< cols; j++) {
         jW[j] = j-1;
@@ -127,8 +127,8 @@ int main(int argc, char* argv[])
 #pragma gecko region end
 //#pragma gecko region pause at(exec_loc)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
-    #pragma acc serial
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(iN,iS,jW,jE)
+    #pragma acc parallel loop
 	for(int i=0;i<1;i++)
     {
 	    iN[0]    = 0;
@@ -147,7 +147,7 @@ int main(int argc, char* argv[])
 
 #pragma gecko region pause at(exec_loc)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(I,J)
     #pragma acc parallel loop
     for (k = 0;  k < size_I; k++ ) {
      	J[k] = (float)exp(I[k]) ;
@@ -165,7 +165,7 @@ int main(int argc, char* argv[])
 	for (iter=0; iter< niter; iter++){
 #endif
 		sum=0; sum2=0;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(I,J)
 		#pragma acc parallel loop collapse(2) reduction(+:sum,sum2)
 		for (i=r1; i<=r2; i++) {
             for (j=c1; j<=c2; j++) {
@@ -182,7 +182,7 @@ int main(int argc, char* argv[])
         q0sqr   = varROI / (meanROI*meanROI);
 
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(I,J,c,dN,dS,dW,dE,iN,iS,jW,jE)
         #pragma acc parallel loop collapse(2) independent private(k)
 		for (int i = 0 ; i < rows ; i++) {
             for (int j = 0; j < cols; j++) {
@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
 #pragma gecko region end
 //#pragma gecko region pause at(exec_loc)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(I,J,c,dN,dS,dW,dE,iS,jE)
     	#pragma acc parallel loop collapse(2) independent private(k)
 		for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {

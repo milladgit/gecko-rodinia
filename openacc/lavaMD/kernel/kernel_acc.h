@@ -8,10 +8,10 @@ extern "C" {
 
 void  kernel_acc(	par_str par, 
 					dim_str dim,
-					box_str* box,
-					FOUR_VECTOR* rv,
-					fp* qv,
-					FOUR_VECTOR* fv);
+					gecko_box_str box,
+					gecko_FOUR_VECTOR rv,
+					gecko_fp qv,
+					gecko_FOUR_VECTOR fv);
 
 #ifdef __cplusplus
 }

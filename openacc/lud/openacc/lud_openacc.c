@@ -10,7 +10,7 @@ void lud_openacc(float *a, int size)
 //     #pragma acc data copy(a[0:size*size])
      for (i=0; i <size; i++){
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(a)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(a)
          #pragma acc parallel loop
          for (j=i; j <size; j++){
              sum=a[i*size+j];
@@ -24,7 +24,7 @@ void lud_openacc(float *a, int size)
 
 
 	     
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(a)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(a)
          #pragma acc parallel loop
          for (j=i+1;j<size; j++){
              sum=a[j*size+i];

@@ -3,6 +3,7 @@
 //----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------200
 
 #define fp double
+#define gecko_fp gecko_double
 
 #define NUMBER_PAR_PER_BOX 100							// keep this low to allow more blocks that share shared memory to run concurrently, code does not work for larger than 110, more speedup can be achieved with larger number and no shared memory used
 
@@ -20,11 +21,15 @@ typedef struct
 
 } THREE_VECTOR;
 
+G_GENERATOR(THREE_VECTOR);
+
 typedef struct
 {
 	fp v, x, y, z;
 
 } FOUR_VECTOR;
+
+G_GENERATOR(FOUR_VECTOR);
 
 typedef struct nei_str
 {
@@ -49,6 +54,8 @@ typedef struct box_str
 	nei_str nei[26];
 
 } box_str;
+
+G_GENERATOR(box_str);
 
 typedef struct par_str
 {

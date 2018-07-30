@@ -200,7 +200,7 @@ void imdilate_disk(int * matrix, int dimX, int dimY, int dimZ, int error, int * 
 * @param neighbors The array that will contain the offsets
 * @param radius The radius used for dilation
 */
-void getneighbors(int * se, int numOnes, double * neighbors, int radius){
+void getneighbors(int * se, int numOnes, gecko_double neighbors, int radius){
 	int x, y;
 	int neighY = 0;
 	int center = radius - 1;
@@ -354,10 +354,10 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 	//original particle centroid
 	double xe = roundDouble(IszY/2.0);
 	double ye = roundDouble(IszX/2.0);
-	
-	double * weights, * likelihood, * arrayX, * arrayY;
-	double * xj, * yj, * CDF, * u;
-	int * ind;
+
+	gecko_double weights, likelihood, arrayX, arrayY;
+	gecko_double xj, yj, CDF, u;
+	gecko_int ind;
 	
 	//expected object locations, compared to center
 	int radius = 5;
@@ -372,9 +372,9 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 				countOnes++;
 		}
 	}
-	double * objxy;
+	gecko_double objxy;
 //	objxy = (double *)malloc(countOnes*2*sizeof(double));
-#pragma gecko memory allocate(objxy[0:countOnes*2]) type(double) location(exec_loc)
+#pragma gecko memory allocate(objxy[0:countOnes*2]) type(gecko_double) location(exec_loc)
 
 	getneighbors(disk, countOnes, objxy, radius);
 
@@ -388,15 +388,15 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 //	yj = (double *)malloc(sizeof(double)*Nparticles);
 //	weights = (double *)malloc(sizeof(double)*Nparticles);
 
-#pragma gecko memory allocate(ind[0:countOnes*Nparticles]) type(int) location(exec_loc)
-#pragma gecko memory allocate(likelihood[0:Nparticles]) type(double) location(exec_loc)
-#pragma gecko memory allocate(CDF[0:Nparticles]) type(double) location(exec_loc)
-#pragma gecko memory allocate(u[0:Nparticles]) type(double) location(exec_loc)
-#pragma gecko memory allocate(arrayX[0:Nparticles]) type(double) location(exec_loc)
-#pragma gecko memory allocate(arrayY[0:Nparticles]) type(double) location(exec_loc)
-#pragma gecko memory allocate(xj[0:Nparticles]) type(double) location(exec_loc)
-#pragma gecko memory allocate(yj[0:Nparticles]) type(double) location(exec_loc)
-#pragma gecko memory allocate(weights[0:Nparticles]) type(double) location(exec_loc)
+#pragma gecko memory allocate(ind[0:countOnes*Nparticles]) type(gecko_int) location(exec_loc)
+#pragma gecko memory allocate(likelihood[0:Nparticles]) type(gecko_double) location(exec_loc)
+#pragma gecko memory allocate(CDF[0:Nparticles]) type(gecko_double) location(exec_loc)
+#pragma gecko memory allocate(u[0:Nparticles]) type(gecko_double) location(exec_loc)
+#pragma gecko memory allocate(arrayX[0:Nparticles]) type(gecko_double) location(exec_loc)
+#pragma gecko memory allocate(arrayY[0:Nparticles]) type(gecko_double) location(exec_loc)
+#pragma gecko memory allocate(xj[0:Nparticles]) type(gecko_double) location(exec_loc)
+#pragma gecko memory allocate(yj[0:Nparticles]) type(gecko_double) location(exec_loc)
+#pragma gecko memory allocate(weights[0:Nparticles]) type(gecko_double) location(exec_loc)
 
 
 //	#pragma acc data copy(I[0:IszX*IszY*Nfr]) copyin(seed[0:Nparticles]) \
@@ -409,7 +409,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 	long long get_neighbors = get_time();
 	printf("TIME TO GET NEIGHBORS TOOK: %f\n", elapsed_time(start, get_neighbors));
 	//initial weights are all equal (1/Nparticles)
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(weights)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(weights)
 	#pragma acc parallel loop present(weights[0:Nparticles])
 	for(x = 0; x < Nparticles; x++){
 		weights[x] = 1/((double)(Nparticles));
@@ -446,7 +446,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		long long error = get_time();
 		printf("TIME TO SET ERROR TOOK: %f\n", elapsed_time(set_arrays, error));
 		//particle filter likelihood
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(likelihood,arrayX,arrayY,ind,objxy,I)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(likelihood,arrayX,arrayY,ind,objxy,I)
 		#pragma acc parallel loop present(likelihood[0:Nparticles],arrayX[0:Nparticles],arrayY[0:Nparticles],ind[0:countOnes*Nparticles],objxy[0:countOnes*2],I[0:IszX*IszY*Nfr])
 		for(x = 0; x < Nparticles; x++){
 			//compute the likelihood: remember our assumption is that you know
@@ -474,7 +474,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		printf("TIME TO GET LIKELIHOODS TOOK: %f\n", elapsed_time(error, likelihood_time));
 		// update & normalize weights
 		// using equation (63) of Arulampalam Tutorial
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(weights,likelihood)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(weights,likelihood)
 		#pragma acc parallel loop
 		for(x = 0; x < Nparticles; x++){
 			weights[x] = weights[x] * exp(likelihood[x]);
@@ -483,7 +483,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		long long exponential = get_time();
 		printf("TIME TO GET EXP TOOK: %f\n", elapsed_time(likelihood_time, exponential));
 		double sumWeights = 0;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(weights)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(weights)
 		#pragma acc parallel loop vector reduction(+:sumWeights)
 		for(x = 0; x < Nparticles; x++){
 			sumWeights += weights[x];
@@ -492,7 +492,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 
 		long long sum_time = get_time();
 		printf("TIME TO SUM WEIGHTS TOOK: %f\n", elapsed_time(exponential, sum_time));
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(weights)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(weights)
 		#pragma acc parallel loop
 		for(x = 0; x < Nparticles; x++){
 			weights[x] = weights[x]/sumWeights;
@@ -503,7 +503,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		xe = 0;
 		ye = 0;
 		// estimate the object location by expected values
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(weights,arrayX,arrayY)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(weights,arrayX,arrayY)
 		#pragma acc parallel loop vector reduction(+:xe, ye) present(weights[0:Nparticles],arrayX[0:Nparticles],arrayY[0:Nparticles])
 		for(x = 0; x < Nparticles; x++){
 			double weight = weights[x];
@@ -538,7 +538,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		long long cum_sum = get_time();
 		printf("TIME TO CALC CUM SUM TOOK: %f\n", elapsed_time(move_time, cum_sum));
 		double u1 = (1/((double)(Nparticles)))*randu(seed, 0);
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(u)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(u)
 		#pragma acc parallel loop present(u[0:Nparticles])
 		for(x = 0; x < Nparticles; x++){
 			u[x] = u1 + x/((double)(Nparticles));
@@ -550,7 +550,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 
 //		#pragma acc wait(UPDATE_TARGET_CDF)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(xj,yj,arrayX,arrayY,CDF,u)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(xj,yj,arrayX,arrayY,CDF,u)
 		#pragma acc parallel loop private(i) present(xj[0:Nparticles],yj[0:Nparticles],arrayX[0:Nparticles],arrayY[0:Nparticles],u[0:Nparticles],CDF[0:Nparticles])
 		for(j = 0; j < Nparticles; j++){
 			FIND_INDEX(i, CDF, Nparticles, u[j]);
@@ -564,7 +564,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		long long xyj_time = get_time();
 		printf("TIME TO CALC NEW ARRAY X AND Y TOOK: %f\n", elapsed_time(u_time, xyj_time));
 		//reassign arrayX and arrayY
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(xj,yj,arrayX,arrayY,weights)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(xj,yj,arrayX,arrayY,weights)
 		#pragma acc parallel loop present(xj[0:Nparticles],yj[0:Nparticles],arrayX[0:Nparticles],arrayY[0:Nparticles],weights[0:Nparticles])
 		for(x = 0; x < Nparticles; x++){
 			//reassign arrayX and arrayY
@@ -594,16 +594,16 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 //	free(ind);
 //	free(xj);
 //	free(yj);
-#pragma gecko memory free(objxy)
-#pragma gecko memory free(weights)
-#pragma gecko memory free(likelihood)
-#pragma gecko memory free(arrayX)
-#pragma gecko memory free(arrayY)
-#pragma gecko memory free(CDF)
-#pragma gecko memory free(u)
-#pragma gecko memory free(ind)
-#pragma gecko memory free(xj)
-#pragma gecko memory free(yj)
+#pragma gecko memory freeobj(objxy)
+#pragma gecko memory freeobj(weights)
+#pragma gecko memory freeobj(likelihood)
+#pragma gecko memory freeobj(arrayX)
+#pragma gecko memory freeobj(arrayY)
+#pragma gecko memory freeobj(CDF)
+#pragma gecko memory freeobj(u)
+#pragma gecko memory freeobj(ind)
+#pragma gecko memory freeobj(xj)
+#pragma gecko memory freeobj(yj)
 
 }
 int main(int argc, char * argv[]){

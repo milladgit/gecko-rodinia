@@ -187,7 +187,7 @@ void InitPerRun(gecko_float m)
 void Fan1(gecko_float m, gecko_float a, int Size, int t)
 {   
 	int i;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(a)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(m,a)
 	#pragma acc parallel loop
 	for (i=0; i<Size-1-t; i++)
 		m[Size*(i+t+1)+t] = a[Size*(i+t+1)+t] / a[Size*t+t];

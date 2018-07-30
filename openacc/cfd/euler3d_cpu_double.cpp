@@ -105,7 +105,7 @@ void copy_double(gecko_double dst, gecko_double src, int N)
 		dst[i] = src[i];
 	}
 #pragma gecko region end
-#pragma gecko region pause at(exec_loc)
+//#pragma gecko region pause at(exec_loc)
 }
 
 
@@ -157,7 +157,7 @@ void initialize_variables(int nelr, gecko_double variables)
 		for(int j = 0; j < NVAR; j++) variables[i*NVAR + j] = ff_variable[j];
 	}
 #pragma gecko region end
-#pragma gecko region pause at(exec_loc)
+//#pragma gecko region pause at(exec_loc)
 }
 
 inline void compute_flux_contribution(double& density, double3& momentum, double& density_energy, double& pressure, double3& velocity, double3& fc_momentum_x, double3& fc_momentum_y, double3& fc_momentum_z, double3& fc_density_energy)
@@ -227,7 +227,7 @@ void compute_step_factor(int nelr, gecko_double variables, gecko_double areas, g
 		step_factors[i] = double(0.5) / (std::sqrt(areas[i]) * (std::sqrt(speed_sqd) + speed_of_sound));
 	}
 #pragma gecko region end
-#pragma gecko region pause at(exec_loc)
+//#pragma gecko region pause at(exec_loc)
 }
 
 
@@ -370,7 +370,7 @@ void compute_flux(int nelr, gecko_int elements_surrounding_elements, gecko_doubl
 		fluxes[i*NVAR + VAR_DENSITY_ENERGY] = flux_i_density_energy;
 	}
 #pragma gecko region end
-#pragma gecko region pause at(exec_loc)
+//#pragma gecko region pause at(exec_loc)
 }
 
 void time_step(int j, int nelr, gecko_double old_variables, gecko_double variables, gecko_double step_factors, gecko_double fluxes)
@@ -388,7 +388,7 @@ void time_step(int j, int nelr, gecko_double old_variables, gecko_double variabl
 		variables[NVAR*i + (VAR_MOMENTUM+2)] = old_variables[NVAR*i + (VAR_MOMENTUM+2)] + factor*fluxes[NVAR*i + (VAR_MOMENTUM+2)];
 	}
 #pragma gecko region end
-#pragma gecko region pause at(exec_loc)
+//#pragma gecko region pause at(exec_loc)
 }
 /*
  * Main function
@@ -514,7 +514,7 @@ int main(int argc, char** argv)
 	for(int i = 0; i < iterations; i++)
 	{
 		copy_double(old_variables, variables, nelr*NVAR);
-#pragma gecko region pause at(exec_loc)
+//#pragma gecko region pause at(exec_loc)
 
 		// for the first iteration we compute the time step
 		compute_step_factor(nelr, variables, areas, step_factors);
@@ -522,9 +522,10 @@ int main(int argc, char** argv)
 		for(int j = 0; j < RK; j++)
 		{
 			compute_flux(nelr, elements_surrounding_elements, normals, variables, fluxes);
-#pragma gecko region pause at(exec_loc)
+//#pragma gecko region pause at(exec_loc)
 			time_step(j, nelr, old_variables, variables, step_factors, fluxes);
-#pragma gecko region pause at(exec_loc)
+
+//#pragma gecko region pause at(exec_loc)
         }
 	}
 	} /* end pragma acc data */

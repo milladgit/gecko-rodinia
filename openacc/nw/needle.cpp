@@ -79,7 +79,7 @@ runTest( int argc, char** argv)
 	#pragma gecko config env
 
     int max_rows, max_cols, penalty,idx, index;
-    int *input_itemsets, *output_itemsets, *referrence;
+    gecko_int input_itemsets, output_itemsets, referrence;
 	int *matrix_cuda, *matrix_cuda_out, *referrence_cuda;
 	int size;
 	
@@ -103,9 +103,9 @@ runTest( int argc, char** argv)
 //	output_itemsets = (int *)malloc( max_rows * max_cols * sizeof(int) );
 
 	int total_elements = max_rows*max_cols;
-#pragma gecko memory allocate(referrence[0:total_elements]) type(int) location(exec_loc)
-#pragma gecko memory allocate(input_itemsets[0:total_elements]) type(int) location(exec_loc)
-#pragma gecko memory allocate(output_itemsets[0:total_elements]) type(int) location(exec_loc)
+#pragma gecko memory allocate(referrence[0:total_elements]) type(gecko_int) location(exec_loc)
+#pragma gecko memory allocate(input_itemsets[0:total_elements]) type(gecko_int) location(exec_loc)
+#pragma gecko memory allocate(output_itemsets[0:total_elements]) type(gecko_int) location(exec_loc)
 
 
 	if (!input_itemsets)
@@ -142,13 +142,13 @@ runTest( int argc, char** argv)
 //	    copyin(referrence[0:max_rows*max_cols])
 	{
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(input_itemsets)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(input_itemsets)
 	#pragma acc parallel loop
     for( int i = 1; i< max_rows ; i++)
        input_itemsets[i*max_cols] = -i * penalty;
 #pragma gecko region end
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(input_itemsets)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(input_itemsets)
 	#pragma acc parallel loop
 	for( int j = 1; j< max_cols ; j++)
        input_itemsets[j] = -j * penalty;
@@ -159,7 +159,7 @@ runTest( int argc, char** argv)
 	printf("Processing top-left matrix\n");
 	
     for( int i = 0 ; i < max_cols-2 ; i++){
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(input_itemsets,referrence)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(input_itemsets,referrence)
     	#pragma acc parallel loop
 		for( idx = 0 ; idx <= i ; idx++){
 		 index = (idx + 1) * max_cols + (i + 1 - idx);
@@ -175,7 +175,7 @@ runTest( int argc, char** argv)
 	printf("Processing bottom-right matrix\n");
     
 	for( int i = max_cols - 4 ; i >= 0 ; i--){
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(input_itemsets,referrence)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(input_itemsets,referrence)
 		#pragma acc parallel loop
         for( idx = 0 ; idx <= i ; idx++){
 	      index =  ( max_cols - idx - 2 ) * max_cols + idx + max_cols - i - 2 ;
@@ -259,9 +259,7 @@ runTest( int argc, char** argv)
 //	free(input_itemsets);
 //	free(output_itemsets);
 
-#pragma gecko memory free(referrence)
-#pragma gecko memory free(input_itemsets)
-#pragma gecko memory free(output_itemsets)
+#pragma gecko memory freeobj(referrence,input_itemsets,output_itemsets)
 
 }
 

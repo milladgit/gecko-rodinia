@@ -114,7 +114,7 @@ void run(int argc, char** argv)
 
 //#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(src,dst,data)
 //        #pragma acc parallel loop independent
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(src,dst,data)
 #pragma acc parallel loop independent
         for(int n = 0; n < cols; n++){
           min = src[n];
@@ -154,8 +154,8 @@ void run(int argc, char** argv)
 //    delete [] data;
 //    delete [] dst;
 //    delete [] src;
-//#pragma gecko memory free(data)
-//#pragma gecko memory free(dst)
-//#pragma gecko memory free(src)
+#pragma gecko memory freeobj(data)
+#pragma gecko memory freeobj(dst)
+#pragma gecko memory freeobj(src)
 }
 

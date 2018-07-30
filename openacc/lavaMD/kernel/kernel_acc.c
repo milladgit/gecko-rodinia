@@ -41,10 +41,10 @@ extern char *exec_policy_chosen;
 
 void  kernel_acc(	par_str par, 
 					dim_str dim,
-					box_str* box,
-					FOUR_VECTOR* rv,
-					fp* qv,
-					FOUR_VECTOR* fv)
+					gecko_box_str box,
+					gecko_FOUR_VECTOR rv,
+					gecko_fp qv,
+					gecko_FOUR_VECTOR fv)
 {
 
 	//======================================================================================================================================================150
@@ -109,7 +109,7 @@ void  kernel_acc(	par_str par,
 	//	PROCESS INTERACTIONS
 	//======================================================================================================================================================150
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(box,rv,qv,fv)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(box,rv,qv,fv)
 	#pragma acc parallel loop present(box[0:dim.number_boxes],rv[0:dim.space_elem],qv[0:dim.space_elem],fv[0:dim.space_elem])
 	for(l=0; l<dim.number_boxes; l++){
 

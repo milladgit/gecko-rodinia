@@ -29,15 +29,15 @@ static char *exec_policy_chosen = "static";
  * advances the solution of the discretized difference equations 
  * by one time step
  */
-void single_iteration(double *result, double *temp, double *power, int row, int col,
+void single_iteration(gecko_double result, gecko_double temp, gecko_double power, int row, int col,
 					  double Cap, double Rx, double Ry, double Rz, 
 					  double step)
 {
 	double delta;
 	int r, c;
 
-	#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(temp,power,result)
-	#pragma acc parallel loop present(temp, power, result)
+	#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(temp,power,result)
+	#pragma acc parallel loop
 	for (r = 0; r < row; r++) {
 		#pragma acc loop
 		for (c = 0; c < col; c++) {
@@ -106,8 +106,8 @@ void single_iteration(double *result, double *temp, double *power, int row, int 
 	#pragma gecko region end
 
 
-	#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(temp,power,result)
-	#pragma acc parallel loop present(temp, result)
+	#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(temp,power,result)
+	#pragma acc parallel loop 
 	for (r = 0; r < row; r++) {
 		#pragma acc loop
 		for (c = 0; c < col; c++) {
@@ -123,7 +123,7 @@ void single_iteration(double *result, double *temp, double *power, int row, int 
  * transfer differential equations to difference equations 
  * and solves the difference equations by iterating
  */
-void compute_tran_temp(double *result, int num_iterations, double *temp, double *power, int row, int col) 
+void compute_tran_temp(gecko_double result, int num_iterations, gecko_double temp, gecko_double power, int row, int col)
 {
 	#ifdef VERBOSE
 	int i = 0;
@@ -168,7 +168,7 @@ void fatal(char *s)
 	exit(1);
 }
 
-void read_input(double *vect, int grid_rows, int grid_cols, char *file)
+void read_input(gecko_double vect, int grid_rows, int grid_cols, char *file)
 {
   	int i;
 	FILE *fp;
@@ -205,7 +205,7 @@ void usage(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	int grid_rows, grid_cols, sim_time;
-	double *temp, *power, *result;
+	gecko_double temp, power, result;
 	char *tfile, *pfile;
 	
 	/* check validity of inputs	*/
@@ -226,9 +226,9 @@ int main(int argc, char **argv)
 
 	#pragma gecko config env
 
-	#pragma gecko memory allocate(result[0:grid_rows*grid_cols]) type(double) location(exec_loc)
-	#pragma gecko memory allocate(power[0:grid_rows*grid_cols]) type(double) location(exec_loc)
-	#pragma gecko memory allocate(temp[0:grid_rows*grid_cols]) type(double) location(exec_loc)
+	#pragma gecko memory allocate(result[0:grid_rows*grid_cols]) type(gecko_double) location(exec_loc)
+	#pragma gecko memory allocate(power[0:grid_rows*grid_cols]) type(gecko_double) location(exec_loc)
+	#pragma gecko memory allocate(temp[0:grid_rows*grid_cols]) type(gecko_double) location(exec_loc)
 
 	/* read initial temperatures and input power	*/
 	tfile = argv[4];
@@ -256,8 +256,7 @@ int main(int argc, char **argv)
 //	free(temp);
 //	free(power);
 
-#pragma gecko memory free(temp)
-#pragma gecko memory free(power)
+#pragma gecko memory freeobj(temp,power,result)
 
 	return 0;
 }

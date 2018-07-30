@@ -140,7 +140,7 @@ void BFSGraph( int argc, char** argv)
 
 //	#pragma acc update device(h_graph_nodes[0:no_of_nodes]) async(TRANSFER_GRAPH_NODE)
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(h_updating_graph_mask,h_graph_mask,h_graph_visited)
 	#pragma acc parallel loop
 	for( unsigned int i = 0; i < no_of_nodes; i++)
 	{
@@ -152,7 +152,7 @@ void BFSGraph( int argc, char** argv)
 
 
 #pragma gecko region at(exec_loc) exec_pol("any")
-	#pragma acc parallel loop num_gangs(1) vector_length(1)
+	#pragma acc parallel loop num_gangs(1) vector_length(1) variable_list_internal(h_graph_mask,h_graph_visited)
 	for(int i=0;i<1;i++)
 	{
 	    //set the source node as true in the mask
@@ -163,7 +163,7 @@ void BFSGraph( int argc, char** argv)
 
 	// allocate mem for the result on host side
 	// h_cost = (int*) malloc( sizeof(int)*no_of_nodes);
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(h_cost)
 	#pragma acc parallel loop
 	for(int i=0;i<no_of_nodes;i++) {
 		h_cost[i]=-1;
@@ -187,7 +187,7 @@ void BFSGraph( int argc, char** argv)
 		//if no thread changes this value then the loop stops
 		stop=false;
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(h_graph_mask,h_graph_nodes,h_graph_edges,h_graph_visited,h_cost,h_updating_graph_mask)
 		#pragma acc parallel loop independent
 		for(int tid = 0; tid < no_of_nodes; tid++ )
 		{
@@ -209,7 +209,7 @@ void BFSGraph( int argc, char** argv)
 		}
 #pragma gecko region end
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list_internal(h_graph_mask,h_graph_visited,h_cost,h_updating_graph_mask)
 		#pragma acc parallel loop vector reduction(||:stop) independent
   		for(int tid=0; tid< no_of_nodes ; tid++ )
 		{

@@ -95,7 +95,7 @@ main ( int argc, char *argv[] )
       }
 
 	  float *m2;
-#pragma gecko memory allocate(m2[0:matrix_dim*matrix_dim]) type(float) location(exec_loc)
+#pragma gecko memory allocate(m2[0:matrix_dim*matrix_dim]) type(gecko_float) location(exec_loc)
 	  for(int i=0;i<matrix_dim;i++) {
 		  for(int j=0;j<matrix_dim;j++) {
 			  int index = i*matrix_dim+j;
@@ -131,7 +131,7 @@ main ( int argc, char *argv[] )
   }
 
 //  free(m);
-#pragma gecko memory free(m)
+#pragma gecko memory freeobj(m)
 
   return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */
