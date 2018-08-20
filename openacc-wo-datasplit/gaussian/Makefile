@@ -5,7 +5,7 @@ include ../../common/make.config
 CC := pgc++
 CCFLAGS := -mp -acc -ta=tesla,multicore -Minfo=accel -O3 -std=c++11 -Mcuda
 
-CCFLAGS += -g -O0
+# CCFLAGS += -g -O0
 
 CCFLAGS += -I$(GECKO_HOME)/ -L$(GECKO_HOME)/lib
 CCLIBS = -lgecko

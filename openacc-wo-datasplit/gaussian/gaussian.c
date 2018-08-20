@@ -19,22 +19,21 @@
 #include <string.h>
 
 int Size;
-//float *a, *b, *finalVec;
-//float *m;
-gecko_float a, b, m, finalVec;
+float *a, *b, *finalVec;
+float *m;
 
 FILE *fp;
 
 void InitProblemOnce(char *filename);
-void InitPerRun(gecko_float m);
+void InitPerRun(float *m);
 void ForwardSub();
 void BackSub();
-void Fan1(gecko_float m, gecko_float a, int Size, int t);
-void Fan2(gecko_float m, gecko_float a, gecko_float b,int Size, int j1, int t);
-void InitMat(gecko_float ary, int nrow, int ncol);
-void InitAry(gecko_float ary, int ary_size);
-void PrintMat(gecko_float ary, int nrow, int ncolumn);
-void PrintAry(gecko_float ary, int ary_size);
+void Fan1(float *m, float *a, int Size, int t);
+void Fan2(float *m, float *a, float *b, int Size, int j1, int t);
+void InitMat(float *ary, int nrow, int ncol);
+void InitAry(float *ary, int ary_size);
+void PrintMat(float *ary, int nrow, int ncolumn);
+void PrintAry(float *ary, int ary_size);
 
 unsigned int totalKernelTime = 0;
 
@@ -116,9 +115,9 @@ int main(int argc, char *argv[])
     /*printf("%d,%d\n",size,time_total);
     fprintf(stderr,"%d,%d\n",size,time_total);*/
 
-//#pragma gecko memory free(m)
-//#pragma gecko memory free(a)
-//#pragma gecko memory free(b)
+#pragma gecko memory free(m)
+#pragma gecko memory free(a)
+#pragma gecko memory free(b)
 
 //    free(m);
 //    free(a);
@@ -147,20 +146,20 @@ void InitProblemOnce(char *filename)
 	fscanf(fp, "%d", &Size);	
 	 
 //	a = (float *) malloc(Size * Size * sizeof(float));
-#pragma gecko memory allocate(a[0:Size*Size]) type(gecko_float) location(exec_loc)
+#pragma gecko memory allocate(a[0:Size*Size]) type(gecko) location(exec_loc)
 
 	InitMat(a, Size, Size);
 	//printf("The input matrix a is:\n");
 	//PrintMat(a, Size, Size);
 //	b = (float *) malloc(Size * sizeof(float));
-#pragma gecko memory allocate(b[0:Size]) type(gecko_float) location(exec_loc)
+#pragma gecko memory allocate(b[0:Size]) type(gecko) location(exec_loc)
 
 	InitAry(b, Size);
 	//printf("The input array b is:\n");
 	//PrintAry(b, Size);
 		
 //	 m = (float *) malloc(Size * Size * sizeof(float));
-#pragma gecko memory allocate(m[0:Size*Size]) type(gecko_float) location(exec_loc)
+#pragma gecko memory allocate(m[0:Size*Size]) type(gecko) location(exec_loc)
 }
 
 /*------------------------------------------------------
@@ -168,7 +167,7 @@ void InitProblemOnce(char *filename)
  ** multipier matrix **m
  **------------------------------------------------------
  */
-void InitPerRun(gecko_float m)
+void InitPerRun(float *m)
 {
 	int i;
 	//#pragma acc kernels present(m)
@@ -184,10 +183,10 @@ void InitPerRun(gecko_float m)
  ** of t which is defined on the ForwardSub().
  **-------------------------------------------------------
  */
-void Fan1(gecko_float m, gecko_float a, int Size, int t)
+void Fan1(float *m, float *a, int Size, int t)
 {   
 	int i;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variale_list(m,a)
 	#pragma acc parallel loop
 	for (i=0; i<Size-1-t; i++)
 		m[Size*(i+t+1)+t] = a[Size*(i+t+1)+t] / a[Size*t+t];
@@ -199,10 +198,10 @@ void Fan1(gecko_float m, gecko_float a, int Size, int t)
  **-------------------------------------------------------
  */ 
 
-void Fan2(gecko_float m, gecko_float a, gecko_float b,int Size, int j1, int t)
+void Fan2(float *m, float *a, float *b, int Size, int j1, int t)
 {
 	int i,j;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variale_list(a,b,m)
 	#pragma acc parallel loop
 	for (i=0; i<Size-1-t; i++) {
 	    #pragma acc loop
@@ -211,7 +210,7 @@ void Fan2(gecko_float m, gecko_float a, gecko_float b,int Size, int j1, int t)
 	}
 #pragma gecko region end
 	
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variale_list(a,b,m)
 	#pragma acc parallel loop 
 	for (i=0; i<Size-1-t; i++)
 		b[i+1+t] -= m[Size*(i+1+t)+t] * b[t];
@@ -257,7 +256,7 @@ void BackSub()
 {
 	// create a new vector to hold the final answer
 //	finalVec = (float *) malloc(Size * sizeof(float));
-#pragma gecko memory allocate(finalVec[0:Size]) type(gecko_float) location(exec_loc)
+#pragma gecko memory allocate(finalVec[0:Size]) type(float) location(exec_loc)
 	// solve "bottom up"
 	int i,j;
 	for(i=0;i<Size;i++){
@@ -270,7 +269,7 @@ void BackSub()
 	}
 }
 
-void InitMat(gecko_float ary, int nrow, int ncol)
+void InitMat(float *ary, int nrow, int ncol)
 {
 	int i, j;
 	float val;
@@ -285,7 +284,7 @@ void InitMat(gecko_float ary, int nrow, int ncol)
  ** PrintMat() -- Print the contents of the matrix
  **------------------------------------------------------
  */
-void PrintMat(gecko_float ary, int nrow, int ncol)
+void PrintMat(float *ary, int nrow, int ncol)
 {
 	int i, j;
 	
@@ -303,7 +302,7 @@ void PrintMat(gecko_float ary, int nrow, int ncol)
  ** data from the data file
  **------------------------------------------------------
  */
-void InitAry(gecko_float ary, int ary_size)
+void InitAry(float *ary, int ary_size)
 {
 	int i;
 	
@@ -316,7 +315,7 @@ void InitAry(gecko_float ary, int ary_size)
  ** PrintAry() -- Print the contents of the array (vector)
  **------------------------------------------------------
  */
-void PrintAry(gecko_float ary, int ary_size)
+void PrintAry(float *ary, int ary_size)
 {
 	int i;
 	for (i=0; i<ary_size; i++) {

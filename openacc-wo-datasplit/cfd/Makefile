@@ -10,7 +10,8 @@ CC_FLAGS += -I$(GECKO_HOME)/ -L$(GECKO_HOME)/lib
 CC_LIB = -lgecko
 
 
-all: euler3d_cpu euler3d_cpu_double pre_euler3d_cpu pre_euler3d_cpu_double
+# all: euler3d_cpu euler3d_cpu_double pre_euler3d_cpu pre_euler3d_cpu_double
+all: euler3d_cpu_double
 
 euler3d_cpu: euler3d_cpu.cpp
 	$(CC) $(CC_FLAGS) -Diterations=$(ITERATIONS) -Dblock_length=$(OMP_NUM_THREADS) euler3d_cpu.cpp -o euler3d_cpu $(CC_LIB)

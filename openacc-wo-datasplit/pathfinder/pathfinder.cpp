@@ -15,11 +15,9 @@ void run(int argc, char** argv);
 //#define BENCH_PRINT
 
 int rows, cols;
-//int* data;
-gecko_int data;
+int* data;
 #define wall(i,j) (data[i*rows+j])
-//int* result;
-gecko_int result;
+int* result;
 #define M_SEED 9
 
 
@@ -41,8 +39,8 @@ init(int argc, char** argv)
 //	result = new int[cols];
 //#pragma gecko memory allocate(data[0:rows*cols]) type(int) location(exec_loc)
 //#pragma gecko memory allocate(result[0:cols]) type(int) location(exec_loc)
-#pragma gecko memory allocate(data[0:rows*cols]) type(gecko_int) location(exec_loc)
-#pragma gecko memory allocate(result[0:cols]) type(gecko_int) location(exec_loc)
+#pragma gecko memory allocate(data[0:rows*cols]) type(int) location(exec_loc)
+#pragma gecko memory allocate(result[0:cols]) type(int) location(exec_loc)
 
 	int seed = M_SEED;
 	srand(seed);
@@ -95,14 +93,14 @@ void run(int argc, char** argv)
     unsigned long long cycles;
 
 //    int *src, *dst, *temp;
-	gecko_int src, dst, temp;
+	int *src, *dst, *temp;
     int min;
 
     pin_stats_reset();
 
     dst = result;
 //    src = new int[cols];
-#pragma gecko memory allocate(src[0:cols]) type(gecko_int) location(exec_loc)
+#pragma gecko memory allocate(src[0:cols]) type(int) location(exec_loc)
 
 //    #pragma acc data create(src[0:cols]) copy(dst[0:cols], data[0:rows*cols])
 
@@ -114,7 +112,7 @@ void run(int argc, char** argv)
 
 //#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(src,dst,data)
 //        #pragma acc parallel loop independent
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(src,dst,temp)
 #pragma acc parallel loop independent
         for(int n = 0; n < cols; n++){
           min = src[n];
@@ -154,8 +152,8 @@ void run(int argc, char** argv)
 //    delete [] data;
 //    delete [] dst;
 //    delete [] src;
-//#pragma gecko memory free(data)
-//#pragma gecko memory free(dst)
-//#pragma gecko memory free(src)
+#pragma gecko memory free(data)
+#pragma gecko memory free(dst)
+#pragma gecko memory free(src)
 }
 
