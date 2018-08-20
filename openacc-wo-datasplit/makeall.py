@@ -3,7 +3,10 @@ import os,sys,glob
 
 cwd = os.getcwd()
 
-file_list = glob.glob("%s/*" % (cwd))
+folder_list = ["bfs", "cfd", "gaussian", "hotspot", "lavaMD", "lud", "nn", "nw", "particlefilter", "pathfinder", "srad_v2"]
+
+# file_list = glob.glob("%s/*" % (cwd))
+file_list = ["%s/%s" % (cwd, f) for f in folder_list]
 
 action = ""
 
@@ -18,4 +21,4 @@ for f in file_list:
 
 	os.chdir(full_path)
 	os.system("make %s" % (action))
-	
+
