@@ -186,7 +186,7 @@ void InitPerRun(float *m)
 void Fan1(float *m, float *a, int Size, int t)
 {   
 	int i;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variale_list(m,a)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(m,a)
 	#pragma acc parallel loop
 	for (i=0; i<Size-1-t; i++)
 		m[Size*(i+t+1)+t] = a[Size*(i+t+1)+t] / a[Size*t+t];
@@ -201,7 +201,7 @@ void Fan1(float *m, float *a, int Size, int t)
 void Fan2(float *m, float *a, float *b, int Size, int j1, int t)
 {
 	int i,j;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variale_list(a,b,m)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(a,b,m)
 	#pragma acc parallel loop
 	for (i=0; i<Size-1-t; i++) {
 	    #pragma acc loop
@@ -210,7 +210,7 @@ void Fan2(float *m, float *a, float *b, int Size, int j1, int t)
 	}
 #pragma gecko region end
 	
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variale_list(a,b,m)
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(a,b,m)
 	#pragma acc parallel loop 
 	for (i=0; i<Size-1-t; i++)
 		b[i+1+t] -= m[Size*(i+1+t)+t] * b[t];
