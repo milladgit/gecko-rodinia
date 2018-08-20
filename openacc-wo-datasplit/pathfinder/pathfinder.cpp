@@ -110,10 +110,8 @@ void run(int argc, char** argv)
         src = dst;
         dst = temp;
 
-//#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(src,dst,data)
-//        #pragma acc parallel loop independent
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(src,dst,temp)
-#pragma acc parallel loop independent
+#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(src,dst,data)
+        #pragma acc parallel loop independent
         for(int n = 0; n < cols; n++){
           min = src[n];
           if (n > 0)

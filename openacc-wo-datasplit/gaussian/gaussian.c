@@ -146,20 +146,20 @@ void InitProblemOnce(char *filename)
 	fscanf(fp, "%d", &Size);	
 	 
 //	a = (float *) malloc(Size * Size * sizeof(float));
-#pragma gecko memory allocate(a[0:Size*Size]) type(gecko) location(exec_loc)
+#pragma gecko memory allocate(a[0:Size*Size]) type(float) location(exec_loc)
 
 	InitMat(a, Size, Size);
 	//printf("The input matrix a is:\n");
 	//PrintMat(a, Size, Size);
 //	b = (float *) malloc(Size * sizeof(float));
-#pragma gecko memory allocate(b[0:Size]) type(gecko) location(exec_loc)
+#pragma gecko memory allocate(b[0:Size]) type(float) location(exec_loc)
 
 	InitAry(b, Size);
 	//printf("The input array b is:\n");
 	//PrintAry(b, Size);
 		
 //	 m = (float *) malloc(Size * Size * sizeof(float));
-#pragma gecko memory allocate(m[0:Size*Size]) type(gecko) location(exec_loc)
+#pragma gecko memory allocate(m[0:Size*Size]) type(float) location(exec_loc)
 }
 
 /*------------------------------------------------------

@@ -5,7 +5,9 @@
 #include <fstream>
 #include <cmath>
 
+#ifndef double3
 struct double3 { double x, y, z; };
+#endif
 
 #ifndef block_length
 #error "you need to define block_length"
