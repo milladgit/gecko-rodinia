@@ -9,8 +9,11 @@ CC_FLAGS = -w -mp -acc -ta=tesla,multicore -Minfo=accel -O3 -std=c++11 -Mcuda
 CC_FLAGS += -I$(GECKO_HOME)/ -L$(GECKO_HOME)/lib
 CC_LIB = -lgecko
 
+CC_FLAGS += -g -O0
 
-all: euler3d_cpu euler3d_cpu_double pre_euler3d_cpu pre_euler3d_cpu_double
+
+all: euler3d_cpu_double
+#all: euler3d_cpu euler3d_cpu_double pre_euler3d_cpu pre_euler3d_cpu_double
 
 euler3d_cpu: euler3d_cpu.cpp
 	$(CC) $(CC_FLAGS) -Diterations=$(ITERATIONS) -Dblock_length=$(OMP_NUM_THREADS) euler3d_cpu.cpp -o euler3d_cpu $(CC_LIB)
