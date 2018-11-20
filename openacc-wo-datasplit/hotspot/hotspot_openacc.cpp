@@ -1,3 +1,4 @@
+#include "geckoRuntime.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -26,240 +27,289 @@ static char *exec_policy_chosen = "static";
 
 
 /* Single iteration of the transient solver in the grid model.
- * advances the solution of the discretized difference equations 
+ * advances the solution of the discretized difference equations
  * by one time step
  */
 void single_iteration(double *result, double *temp, double *power, int row, int col,
-					  double Cap, double Rx, double Ry, double Rz, 
-					  double step)
+                      double Cap, double Rx, double Ry, double Rz,
+                      double step)
 {
-	double delta;
-	int r, c;
+    double delta;
+    int r, c;
 
-	#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(temp,power,result)
-	#pragma acc parallel loop present(temp, power, result)
-	for (r = 0; r < row; r++) {
-		#pragma acc loop
-		for (c = 0; c < col; c++) {
-  			/*	Corner 1	*/
-			if ( (r == 0) && (c == 0) ) {
-				delta = (step / Cap) * (power[0] +
-						(temp[1] - temp[0]) / Rx +
-						(temp[col] - temp[0]) / Ry +
-						(amb_temp - temp[0]) / Rz);
-			}	/*	Corner 2	*/
-			else if ((r == 0) && (c == col-1)) {
-				delta = (step / Cap) * (power[c] +
-						(temp[c-1] - temp[c]) / Rx +
-						(temp[c+col] - temp[c]) / Ry +
-						(amb_temp - temp[c]) / Rz);
-			}	/*	Corner 3	*/
-			else if ((r == row-1) && (c == col-1)) {
-				delta = (step / Cap) * (power[r*col+c] + 
-						(temp[r*col+c-1] - temp[r*col+c]) / Rx + 
-						(temp[(r-1)*col+c] - temp[r*col+c]) / Ry + 
-						(amb_temp - temp[r*col+c]) / Rz);					
-			}	/*	Corner 4	*/
-			else if ((r == row-1) && (c == 0)) {
-				delta = (step / Cap) * (power[r*col] + 
-						(temp[r*col+1] - temp[r*col]) / Rx + 
-						(temp[(r-1)*col] - temp[r*col]) / Ry + 
-						(amb_temp - temp[r*col]) / Rz);
-			}	/*	Edge 1	*/
-			else if (r == 0) {
-				delta = (step / Cap) * (power[c] + 
-						(temp[c+1] + temp[c-1] - 2.0*temp[c]) / Rx + 
-						(temp[col+c] - temp[c]) / Ry + 
-						(amb_temp - temp[c]) / Rz);
-			}	/*	Edge 2	*/
-			else if (c == col-1) {
-				delta = (step / Cap) * (power[r*col+c] + 
-						(temp[(r+1)*col+c] + temp[(r-1)*col+c] - 2.0*temp[r*col+c]) / Ry + 
-						(temp[r*col+c-1] - temp[r*col+c]) / Rx + 
-						(amb_temp - temp[r*col+c]) / Rz);
-			}	/*	Edge 3	*/
-			else if (r == row-1) {
-				delta = (step / Cap) * (power[r*col+c] + 
-						(temp[r*col+c+1] + temp[r*col+c-1] - 2.0*temp[r*col+c]) / Rx + 
-						(temp[(r-1)*col+c] - temp[r*col+c]) / Ry + 
-						(amb_temp - temp[r*col+c]) / Rz);
-			}	/*	Edge 4	*/
-			else if (c == 0) {
-				delta = (step / Cap) * (power[r*col] + 
-						(temp[(r+1)*col] + temp[(r-1)*col] - 2.0*temp[r*col]) / Ry + 
-						(temp[r*col+1] - temp[r*col]) / Rx + 
-						(amb_temp - temp[r*col]) / Rz);
-			}	/*	Inside the chip	*/
-			else {
-				delta = (step / Cap) * (power[r*col+c] + 
-						(temp[(r+1)*col+c] + temp[(r-1)*col+c] - 2.0*temp[r*col+c]) / Ry + 
-						(temp[r*col+c+1] + temp[r*col+c-1] - 2.0*temp[r*col+c]) / Rx + 
-						(amb_temp - temp[r*col+c]) / Rz);
-			}
-  			
-			/*	Update Temperatures	*/
-			result[r*col+c] =temp[r*col+c]+ delta;
+    {
+        int *beginLoopIndex=NULL, *endLoopIndex=NULL, jobCount, devCount, devIndex;
+        GeckoLocation **dev = NULL;
+        int ranges_count = 0;
+        float *ranges = NULL;
+        int var_count = 3;
+        void **var_list = (void **) malloc(sizeof(void*) * var_count);
+        for(int __v_id=0; __v_id<var_count; __v_id++) {
+            var_list[__v_id] = temp;
+            var_list[__v_id] = power;
+            var_list[__v_id] = result;
+        }
+        GeckoError err = geckoRegion(exec_policy_chosen, exec_loc, 0, row, 1, 0, &devCount, &beginLoopIndex, &endLoopIndex, &dev, ranges_count, ranges, var_count, var_list);
+        jobCount = devCount;
+        if(err != GECKO_ERR_TOTAL_ITERATIONS_ZERO) {
+            #pragma omp parallel num_threads(jobCount)
+            {
+                int devIndex = omp_get_thread_num();
+                if(dev[devIndex] != NULL) {
+                    int beginLI = beginLoopIndex[devIndex], endLI = endLoopIndex[devIndex];
+                    int asyncID = dev[devIndex]->getAsyncID();
+#pragma acc parallel loop present(temp, power, result) deviceptr(temp,power,result) async(asyncID) copyin()
+                    for( r = beginLI; r < endLI; r++) {
+#pragma acc loop
+                        for (c = 0; c < col; c++) {
+                            /*	Corner 1	*/
+                            if ( (r == 0) && (c == 0) ) {
+                                delta = (step / Cap) * (power[0] +
+                                                        (temp[1] - temp[0]) / Rx +
+                                                        (temp[col] - temp[0]) / Ry +
+                                                        (amb_temp - temp[0]) / Rz);
+                            }	/*	Corner 2	*/
+                            else if ((r == 0) && (c == col-1)) {
+                                delta = (step / Cap) * (power[c] +
+                                                        (temp[c-1] - temp[c]) / Rx +
+                                                        (temp[c+col] - temp[c]) / Ry +
+                                                        (amb_temp - temp[c]) / Rz);
+                            }	/*	Corner 3	*/
+                            else if ((r == row-1) && (c == col-1)) {
+                                delta = (step / Cap) * (power[r*col+c] +
+                                                        (temp[r*col+c-1] - temp[r*col+c]) / Rx +
+                                                        (temp[(r-1)*col+c] - temp[r*col+c]) / Ry +
+                                                        (amb_temp - temp[r*col+c]) / Rz);
+                            }	/*	Corner 4	*/
+                            else if ((r == row-1) && (c == 0)) {
+                                delta = (step / Cap) * (power[r*col] +
+                                                        (temp[r*col+1] - temp[r*col]) / Rx +
+                                                        (temp[(r-1)*col] - temp[r*col]) / Ry +
+                                                        (amb_temp - temp[r*col]) / Rz);
+                            }	/*	Edge 1	*/
+                            else if (r == 0) {
+                                delta = (step / Cap) * (power[c] +
+                                                        (temp[c+1] + temp[c-1] - 2.0*temp[c]) / Rx +
+                                                        (temp[col+c] - temp[c]) / Ry +
+                                                        (amb_temp - temp[c]) / Rz);
+                            }	/*	Edge 2	*/
+                            else if (c == col-1) {
+                                delta = (step / Cap) * (power[r*col+c] +
+                                                        (temp[(r+1)*col+c] + temp[(r-1)*col+c] - 2.0*temp[r*col+c]) / Ry +
+                                                        (temp[r*col+c-1] - temp[r*col+c]) / Rx +
+                                                        (amb_temp - temp[r*col+c]) / Rz);
+                            }	/*	Edge 3	*/
+                            else if (r == row-1) {
+                                delta = (step / Cap) * (power[r*col+c] +
+                                                        (temp[r*col+c+1] + temp[r*col+c-1] - 2.0*temp[r*col+c]) / Rx +
+                                                        (temp[(r-1)*col+c] - temp[r*col+c]) / Ry +
+                                                        (amb_temp - temp[r*col+c]) / Rz);
+                            }	/*	Edge 4	*/
+                            else if (c == 0) {
+                                delta = (step / Cap) * (power[r*col] +
+                                                        (temp[(r+1)*col] + temp[(r-1)*col] - 2.0*temp[r*col]) / Ry +
+                                                        (temp[r*col+1] - temp[r*col]) / Rx +
+                                                        (amb_temp - temp[r*col]) / Rz);
+                            }	/*	Inside the chip	*/
+                            else {
+                                delta = (step / Cap) * (power[r*col+c] +
+                                                        (temp[(r+1)*col+c] + temp[(r-1)*col+c] - 2.0*temp[r*col+c]) / Ry +
+                                                        (temp[r*col+c+1] + temp[r*col+c-1] - 2.0*temp[r*col+c]) / Rx +
+                                                        (amb_temp - temp[r*col+c]) / Rz);
+                            }
+
+                            /*	Update Temperatures	*/
+                            result[r*col+c] =temp[r*col+c]+ delta;
 
 
-		}
-	}
-	#pragma gecko region end
+                        }
+                    }
+#pragma acc wait(asyncID)
+                } // end of if(dev[devIndex]!=NULL)
+            } // end of OpenMP pragma
+        } // end of checking: err != GECKO_ERR_TOTAL_ITERATIONS_ZERO
+        geckoFreeRegionTemp(beginLoopIndex, endLoopIndex, devCount, dev, var_list);
+    }
 
 
-	#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(temp,power,result)
-	#pragma acc parallel loop present(temp, result)
-	for (r = 0; r < row; r++) {
-		#pragma acc loop
-		for (c = 0; c < col; c++) {
-			temp[r*col+c]=result[r*col+c];
-		}
-	}
-	#pragma gecko region end
+    {
+        int *beginLoopIndex=NULL, *endLoopIndex=NULL, jobCount, devCount, devIndex;
+        GeckoLocation **dev = NULL;
+        int ranges_count = 0;
+        float *ranges = NULL;
+        int var_count = 3;
+        void **var_list = (void **) malloc(sizeof(void*) * var_count);
+        for(int __v_id=0; __v_id<var_count; __v_id++) {
+            var_list[__v_id] = temp;
+            var_list[__v_id] = power;
+            var_list[__v_id] = result;
+        }
+        GeckoError err = geckoRegion(exec_policy_chosen, exec_loc, 0, row, 1, 0, &devCount, &beginLoopIndex, &endLoopIndex, &dev, ranges_count, ranges, var_count, var_list);
+        jobCount = devCount;
+        if(err != GECKO_ERR_TOTAL_ITERATIONS_ZERO) {
+            #pragma omp parallel num_threads(jobCount)
+            {
+                int devIndex = omp_get_thread_num();
+                if(dev[devIndex] != NULL) {
+                    int beginLI = beginLoopIndex[devIndex], endLI = endLoopIndex[devIndex];
+                    int asyncID = dev[devIndex]->getAsyncID();
+#pragma acc parallel loop present(temp, result) deviceptr(temp,power,result) async(asyncID) copyin()
+                    for( r = beginLI; r < endLI; r++) {
+#pragma acc loop
+                        for (c = 0; c < col; c++) {
+                            temp[r*col+c]=result[r*col+c];
+                        }
+                    }
+#pragma acc wait(asyncID)
+                } // end of if(dev[devIndex]!=NULL)
+            } // end of OpenMP pragma
+        } // end of checking: err != GECKO_ERR_TOTAL_ITERATIONS_ZERO
+        geckoFreeRegionTemp(beginLoopIndex, endLoopIndex, devCount, dev, var_list);
+    }
 
-	#pragma gecko region pause at(exec_loc)
+    geckoWaitOnLocation(exec_loc);
 }
 
-/* Transient solver driver routine: simply converts the heat 
- * transfer differential equations to difference equations 
+/* Transient solver driver routine: simply converts the heat
+ * transfer differential equations to difference equations
  * and solves the difference equations by iterating
  */
-void compute_tran_temp(double *result, int num_iterations, double *temp, double *power, int row, int col) 
+void compute_tran_temp(double *result, int num_iterations, double *temp, double *power, int row, int col)
 {
-	#ifdef VERBOSE
-	int i = 0;
-	#endif
+#ifdef VERBOSE
+    int i = 0;
+#endif
 
-	double grid_height = chip_height / row;
-	double grid_width = chip_width / col;
+    double grid_height = chip_height / row;
+    double grid_width = chip_width / col;
 
-	double Cap = FACTOR_CHIP * SPEC_HEAT_SI * t_chip * grid_width * grid_height;
-	double Rx = grid_width / (2.0 * K_SI * t_chip * grid_height);
-	double Ry = grid_height / (2.0 * K_SI * t_chip * grid_width);
-	double Rz = t_chip / (K_SI * grid_height * grid_width);
+    double Cap = FACTOR_CHIP * SPEC_HEAT_SI * t_chip * grid_width * grid_height;
+    double Rx = grid_width / (2.0 * K_SI * t_chip * grid_height);
+    double Ry = grid_height / (2.0 * K_SI * t_chip * grid_width);
+    double Rz = t_chip / (K_SI * grid_height * grid_width);
 
-	double max_slope = MAX_PD / (FACTOR_CHIP * t_chip * SPEC_HEAT_SI);
-	double step = PRECISION / max_slope;
+    double max_slope = MAX_PD / (FACTOR_CHIP * t_chip * SPEC_HEAT_SI);
+    double step = PRECISION / max_slope;
 
-	#ifdef VERBOSE
-	fprintf(stdout, "total iterations: %d s\tstep size: %g s\n", num_iterations, step);
-	fprintf(stdout, "Rx: %g\tRy: %g\tRz: %g\tCap: %g\n", Rx, Ry, Rz, Cap);
-	#endif
+#ifdef VERBOSE
+    fprintf(stdout, "total iterations: %d s\tstep size: %g s\n", num_iterations, step);
+    fprintf(stdout, "Rx: %g\tRy: %g\tRz: %g\tCap: %g\n", Rx, Ry, Rz, Cap);
+#endif
 
 //	#pragma acc data create(result[0:row*col]) \
 //		copyin(power[0:row*col]) copy(temp[0:row*col])
-	{
-    for (int i = 0; i < num_iterations ; i++)
-	{
-		#ifdef VERBOSE
-		fprintf(stdout, "iteration %d\n", i++);
-		#endif
-		single_iteration(result, temp, power, row, col, Cap, Rx, Ry, Rz, step);
-	}
-	} /* end pragma acc data */	
+    {
+        for (int i = 0; i < num_iterations ; i++)
+        {
+#ifdef VERBOSE
+            fprintf(stdout, "iteration %d\n", i++);
+#endif
+            single_iteration(result, temp, power, row, col, Cap, Rx, Ry, Rz, step);
+        }
+    } /* end pragma acc data */
 
-	#ifdef VERBOSE
-	fprintf(stdout, "iteration %d\n", i++);
-	#endif
+#ifdef VERBOSE
+    fprintf(stdout, "iteration %d\n", i++);
+#endif
 }
 
 void fatal(char *s)
 {
-	fprintf(stderr, "error: %s\n", s);
-	exit(1);
+    fprintf(stderr, "error: %s\n", s);
+    exit(1);
 }
 
 void read_input(double *vect, int grid_rows, int grid_cols, char *file)
 {
-  	int i;
-	FILE *fp;
-	char str[STR_SIZE];
-	double val;
+    int i;
+    FILE *fp;
+    char str[STR_SIZE];
+    double val;
 
-	fp = fopen (file, "r");
-	if (!fp)
-		fatal ("file could not be opened for reading");
+    fp = fopen (file, "r");
+    if (!fp)
+        fatal ("file could not be opened for reading");
 
-	for (i=0; i < grid_rows * grid_cols; i++) {
-		fgets(str, STR_SIZE, fp);
-		if (feof(fp))
-			fatal("not enough lines in file");
-		if ((sscanf(str, "%lf", &val) != 1) )
-			fatal("invalid file format");
-		vect[i] = val;
-	}
+    for (i=0; i < grid_rows * grid_cols; i++) {
+        fgets(str, STR_SIZE, fp);
+        if (feof(fp))
+            fatal("not enough lines in file");
+        if ((sscanf(str, "%lf", &val) != 1) )
+            fatal("invalid file format");
+        vect[i] = val;
+    }
 
-	fclose(fp);	
+    fclose(fp);
 }
 
 void usage(int argc, char **argv)
 {
-	fprintf(stderr, "Usage: %s <grid_rows> <grid_cols> <sim_time> <temp_file> <power_file>\n", argv[0]);
-	fprintf(stderr, "\t<grid_rows>  - number of rows in the grid (positive integer)\n");
-	fprintf(stderr, "\t<grid_cols>  - number of columns in the grid (positive integer)\n");
-	fprintf(stderr, "\t<sim_time>   - number of iterations\n");
-	fprintf(stderr, "\t<temp_file>  - name of the file containing the initial temperature values of each cell\n");
-	fprintf(stderr, "\t<power_file> - name of the file containing the dissipated power values of each cell\n");
-	exit(1);
+    fprintf(stderr, "Usage: %s <grid_rows> <grid_cols> <sim_time> <temp_file> <power_file>\n", argv[0]);
+    fprintf(stderr, "\t<grid_rows>  - number of rows in the grid (positive integer)\n");
+    fprintf(stderr, "\t<grid_cols>  - number of columns in the grid (positive integer)\n");
+    fprintf(stderr, "\t<sim_time>   - number of iterations\n");
+    fprintf(stderr, "\t<temp_file>  - name of the file containing the initial temperature values of each cell\n");
+    fprintf(stderr, "\t<power_file> - name of the file containing the dissipated power values of each cell\n");
+    exit(1);
 }
 
 int main(int argc, char **argv)
 {
-	int grid_rows, grid_cols, sim_time;
-	double *temp, *power, *result;
-	char *tfile, *pfile;
-	
-	/* check validity of inputs	*/
-	if (argc != 6)
-		usage(argc, argv);
-	if ((grid_rows = atoi(argv[1])) <= 0 ||
-		(grid_cols = atoi(argv[2])) <= 0 ||
-		(sim_time = atoi(argv[3])) <= 0
-		)
-		usage(argc, argv);
+    int grid_rows, grid_cols, sim_time;
+    double *temp, *power, *result;
+    char *tfile, *pfile;
 
-	/* allocate memory for the temperature and power arrays	*/
+    /* check validity of inputs	*/
+    if (argc != 6)
+        usage(argc, argv);
+    if ((grid_rows = atoi(argv[1])) <= 0 ||
+            (grid_cols = atoi(argv[2])) <= 0 ||
+            (sim_time = atoi(argv[3])) <= 0
+       )
+        usage(argc, argv);
+
+    /* allocate memory for the temperature and power arrays	*/
 //	temp = (double *) calloc (grid_rows * grid_cols, sizeof(double));
 //	power = (double *) calloc (grid_rows * grid_cols, sizeof(double));
 //	result = (double *) calloc (grid_rows * grid_cols, sizeof(double));
 //	if(!temp || !power)
 //		fatal("unable to allocate memory");
 
-	#pragma gecko config env
+    geckoLoadConfigWithEnv();
+    geckoMemoryDeclare((void**)&result, sizeof(double), grid_rows*grid_cols, exec_loc, GECKO_DISTANCE_NOT_SET);
+    geckoMemoryDeclare((void**)&power, sizeof(double), grid_rows*grid_cols, exec_loc, GECKO_DISTANCE_NOT_SET);
+    geckoMemoryDeclare((void**)&temp, sizeof(double), grid_rows*grid_cols, exec_loc, GECKO_DISTANCE_NOT_SET);
 
-	#pragma gecko memory allocate(result[0:grid_rows*grid_cols]) type(double) location(exec_loc)
-	#pragma gecko memory allocate(power[0:grid_rows*grid_cols]) type(double) location(exec_loc)
-	#pragma gecko memory allocate(temp[0:grid_rows*grid_cols]) type(double) location(exec_loc)
+    /* read initial temperatures and input power	*/
+    tfile = argv[4];
+    pfile = argv[5];
+    read_input(temp, grid_rows, grid_cols, tfile);
+    read_input(power, grid_rows, grid_cols, pfile);
 
-	/* read initial temperatures and input power	*/
-	tfile = argv[4];
-	pfile = argv[5];
-	read_input(temp, grid_rows, grid_cols, tfile);
-	read_input(power, grid_rows, grid_cols, pfile);
-
-	double time;
-	printf("Start computing the transient temperature\n");
-	time = omp_get_wtime();
-	compute_tran_temp(result,sim_time, temp, power, grid_rows, grid_cols);
-	time = omp_get_wtime() - time;
-	printf("Total time: %.2fus\n", time * 1E6);
-	printf("Ending simulation\n");
-	/* output results	*/
+    double time;
+    printf("Start computing the transient temperature\n");
+    time = omp_get_wtime();
+    compute_tran_temp(result,sim_time, temp, power, grid_rows, grid_cols);
+    time = omp_get_wtime() - time;
+    printf("Total time: %.2fus\n", time * 1E6);
+    printf("Ending simulation\n");
+    /* output results	*/
 #ifdef VERBOSE
-	fprintf(stdout, "Final Temperatures:\n");
+    fprintf(stdout, "Final Temperatures:\n");
 #endif
 
 #ifdef OUTPUT
-	for(i=0; i < grid_rows * grid_cols; i++)
-	fprintf(stdout, "%d\t%g\n", i, temp[i]);
+    for(i=0; i < grid_rows * grid_cols; i++)
+        fprintf(stdout, "%d\t%g\n", i, temp[i]);
 #endif
-	/* cleanup	*/
+    /* cleanup	*/
 //	free(temp);
 //	free(power);
 
-#pragma gecko memory free(temp)
-#pragma gecko memory free(power)
+    geckoFree(temp);
+    geckoFree(power);
 
-	return 0;
+    return 0;
 }
 
 

@@ -1,11 +1,12 @@
+#include "geckoRuntime.h"
 /*-----------------------------------------------------------
  ** gaussian.c -- The program is to solve a linear system Ax = b
  **   by using Gaussian Elimination. The algorithm on page 101
- **   ("Foundations of Parallel Programming") is used.  
- **   The sequential version is gaussian.c.  This parallel 
- **   implementation converts three independent for() loops 
- **   into three Fans.  Use the data file ge_3.dat to verify 
- **   the correction of the output. 
+ **   ("Foundations of Parallel Programming") is used.
+ **   The sequential version is gaussian.c.  This parallel
+ **   implementation converts three independent for() loops
+ **   into three Fans.  Use the data file ge_3.dat to verify
+ **   the correction of the output.
  **
  ** Written by Andreas Kura, 02/15/95
  ** Modified by Chong-wei Xu, 04/20/95
@@ -50,10 +51,9 @@ int main(int argc, char *argv[])
     struct timeval time_end;
     unsigned int time_total;
 
-#pragma gecko config env
+    geckoLoadConfigWithEnv();
 
-
-	int verbose = 0;
+    int verbose = 0;
     if (argc < 2) {
         printf("Usage: gaussian matrix.txt [-q]\n\n");
         printf("-q (quiet) suppresses printing the matrix and result values.\n");
@@ -69,15 +69,15 @@ int main(int argc, char *argv[])
         printf("\n");
         printf("-0.6	-0.5	0.7	0.3\n");
         printf("-0.3	-0.9	0.3	0.7\n");
-        printf("-0.4	-0.5	-0.3	-0.8\n");	
+        printf("-0.4	-0.5	-0.3	-0.8\n");
         printf("0.0	-0.1	0.2	0.9\n");
         printf("\n");
-        printf("-0.85	-0.68	0.24	-0.53\n");	
+        printf("-0.85	-0.68	0.24	-0.53\n");
         printf("\n");
         printf("0.7	0.0	-0.4	-0.5\n");
         exit(0);
     }
-    
+
     //char filename[100];
     //sprintf(filename,"matrices/matrix%d.txt",size);
     InitProblemOnce(argv[1]);
@@ -87,15 +87,15 @@ int main(int argc, char *argv[])
     //InitProblemOnce(filename);
     InitPerRun(m);
     //begin timing
-    gettimeofday(&time_start, NULL);	
-    
+    gettimeofday(&time_start, NULL);
+
     // run kernels
     ForwardSub();
-    
+
     //end timing
     gettimeofday(&time_end, NULL);
     time_total = (time_end.tv_sec * 1000000 + time_end.tv_usec) - (time_start.tv_sec * 1000000 + time_start.tv_usec);
-    
+
     if (verbose) {
         printf("Matrix m is: \n");
         PrintMat(m, Size, Size);
@@ -113,20 +113,20 @@ int main(int argc, char *argv[])
     }
     printf("\nTime total (including memory transfers)\t%f sec\n", time_total * 1e-6);
     printf("Time for kernels:\t%f sec\n",totalKernelTime * 1e-6);
-    
+
     /*printf("%d,%d\n",size,time_total);
     fprintf(stderr,"%d,%d\n",size,time_total);*/
 
-#pragma gecko memory free(m)
-#pragma gecko memory free(a)
-#pragma gecko memory free(b)
+    geckoFree(m);
+    geckoFree(a);
+    geckoFree(b);
 
 //    free(m);
 //    free(a);
 //    free(b);
 }
 
- 
+
 /*------------------------------------------------------
  ** InitProblemOnce -- Initialize all of matrices and
  ** vectors by opening a data file specified by the user.
@@ -137,31 +137,31 @@ int main(int argc, char *argv[])
  */
 void InitProblemOnce(char *filename)
 {
-	//char *filename = argv[1];
-	
-	//printf("Enter the data file name: ");
-	//scanf("%s", filename);
-	//printf("The file name is: %s\n", filename);
-	
-	fp = fopen(filename, "r");
-	
-	fscanf(fp, "%d", &Size);	
-	 
+    //char *filename = argv[1];
+
+    //printf("Enter the data file name: ");
+    //scanf("%s", filename);
+    //printf("The file name is: %s\n", filename);
+
+    fp = fopen(filename, "r");
+
+    fscanf(fp, "%d", &Size);
+
 //	a = (float *) malloc(Size * Size * sizeof(float));
-#pragma gecko memory allocate(a[0:Size*Size]) type(gecko_float) location(exec_loc)
+    geckoMemoryInternalTypeDeclare(a, sizeof(float), Size*Size, exec_loc, GECKO_DISTANCE_NOT_SET);
 
-	InitMat(a, Size, Size);
-	//printf("The input matrix a is:\n");
-	//PrintMat(a, Size, Size);
+    InitMat(a, Size, Size);
+    //printf("The input matrix a is:\n");
+    //PrintMat(a, Size, Size);
 //	b = (float *) malloc(Size * sizeof(float));
-#pragma gecko memory allocate(b[0:Size]) type(gecfloat) location(exec_loc)
+    geckoMemoryDeclare((void**)&b, sizeof(gecfloat), Size, exec_loc, GECKO_DISTANCE_NOT_SET);
 
-	InitAry(b, Size);
-	//printf("The input array b is:\n");
-	//PrintAry(b, Size);
-		
+    InitAry(b, Size);
+    //printf("The input array b is:\n");
+    //PrintAry(b, Size);
+
 //	 m = (float *) malloc(Size * Size * sizeof(float));
-#pragma gecko memory allocate(m[0:Size*Size]) type(float) location(exec_loc)
+    geckoMemoryDeclare((void**)&m, sizeof(float), Size*Size, exec_loc, GECKO_DISTANCE_NOT_SET);
 }
 
 /*------------------------------------------------------
@@ -169,12 +169,12 @@ void InitProblemOnce(char *filename)
  ** multipier matrix **m
  **------------------------------------------------------
  */
-void InitPerRun(float *m) 
+void InitPerRun(float *m)
 {
-	int i;
-	//#pragma acc kernels present(m)
-	for (i=0; i<Size*Size; i++)
-			*(m+i) = 0.0;
+    int i;
+    //#pragma acc kernels present(m)
+    for (i=0; i<Size*Size; i++)
+        *(m+i) = 0.0;
 }
 
 /*-------------------------------------------------------
@@ -186,37 +186,109 @@ void InitPerRun(float *m)
  **-------------------------------------------------------
  */
 void Fan1(float *m, float *a, int Size, int t)
-{   
-	int i;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(m,a)
-	#pragma acc parallel loop present(m,a)
-	for (i=0; i<Size-1-t; i++)
-		m[Size*(i+t+1)+t] = a[Size*(i+t+1)+t] / a[Size*t+t];
-#pragma gecko region end
+{
+    int i;
+    {
+        int *beginLoopIndex=NULL, *endLoopIndex=NULL, jobCount, devCount, devIndex;
+        GeckoLocation **dev = NULL;
+        int ranges_count = 0;
+        float *ranges = NULL;
+        int var_count = 2;
+        void **var_list = (void **) malloc(sizeof(void*) * var_count);
+        for(int __v_id=0; __v_id<var_count; __v_id++) {
+            var_list[__v_id] = m;
+            var_list[__v_id] = a;
+        }
+        GeckoError err = geckoRegion(exec_policy_chosen, exec_loc, 0, Size-1-t, 1, 0, &devCount, &beginLoopIndex, &endLoopIndex, &dev, ranges_count, ranges, var_count, var_list);
+        jobCount = devCount;
+        if(err != GECKO_ERR_TOTAL_ITERATIONS_ZERO) {
+            #pragma omp parallel num_threads(jobCount)
+            {
+                int devIndex = omp_get_thread_num();
+                if(dev[devIndex] != NULL) {
+                    int beginLI = beginLoopIndex[devIndex], endLI = endLoopIndex[devIndex];
+                    int asyncID = dev[devIndex]->getAsyncID();
+#pragma acc parallel loop present(m,a) deviceptr(m,a) async(asyncID) copyin()
+                    for( i = beginLI; i < endLI; i++)
+                        m[Size*(i+t+1)+t] = a[Size*(i+t+1)+t] / a[Size*t+t];
+#pragma acc wait(asyncID)
+                } // end of if(dev[devIndex]!=NULL)
+            } // end of OpenMP pragma
+        } // end of checking: err != GECKO_ERR_TOTAL_ITERATIONS_ZERO
+        geckoFreeRegionTemp(beginLoopIndex, endLoopIndex, devCount, dev, var_list);
+    }
 }
 
 /*-------------------------------------------------------
  ** Fan2() -- Modify the matrix A into LUD
  **-------------------------------------------------------
- */ 
+ */
 
 void Fan2(float *m, float *a, float *b,int Size, int j1, int t)
 {
-	int i,j;
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(m,a)
-	#pragma acc parallel loop present(m,a)
-	for (i=0; i<Size-1-t; i++) {
-	    #pragma acc loop
-		for (j=0; j<Size-t; j++)
-			a[Size*(i+1+t)+(j+t)] -= m[Size*(i+1+t)+t] * a[Size*t+(j+t)];
-	}
-#pragma gecko region end
+    int i,j;
+    {
+        int *beginLoopIndex=NULL, *endLoopIndex=NULL, jobCount, devCount, devIndex;
+        GeckoLocation **dev = NULL;
+        int ranges_count = 0;
+        float *ranges = NULL;
+        int var_count = 2;
+        void **var_list = (void **) malloc(sizeof(void*) * var_count);
+        for(int __v_id=0; __v_id<var_count; __v_id++) {
+            var_list[__v_id] = m;
+            var_list[__v_id] = a;
+        }
+        GeckoError err = geckoRegion(exec_policy_chosen, exec_loc, 0, Size-1-t, 1, 0, &devCount, &beginLoopIndex, &endLoopIndex, &dev, ranges_count, ranges, var_count, var_list);
+        jobCount = devCount;
+        if(err != GECKO_ERR_TOTAL_ITERATIONS_ZERO) {
+            #pragma omp parallel num_threads(jobCount)
+            {
+                int devIndex = omp_get_thread_num();
+                if(dev[devIndex] != NULL) {
+                    int beginLI = beginLoopIndex[devIndex], endLI = endLoopIndex[devIndex];
+                    int asyncID = dev[devIndex]->getAsyncID();
+#pragma acc parallel loop present(m,a) deviceptr(m,a) async(asyncID) copyin()
+                    for( i = beginLI; i < endLI; i++) {
+#pragma acc loop
+                        for (j=0; j<Size-t; j++)
+                            a[Size*(i+1+t)+(j+t)] -= m[Size*(i+1+t)+t] * a[Size*t+(j+t)];
+                    }
+#pragma acc wait(asyncID)
+                } // end of if(dev[devIndex]!=NULL)
+            } // end of OpenMP pragma
+        } // end of checking: err != GECKO_ERR_TOTAL_ITERATIONS_ZERO
+        geckoFreeRegionTemp(beginLoopIndex, endLoopIndex, devCount, dev, var_list);
+    }
 
-#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(m,b)
-	#pragma acc parallel loop present(m,b)
-	for (i=0; i<Size-1-t; i++)
-		b[i+1+t] -= m[Size*(i+1+t)+t] * b[t];
-#pragma gecko region end
+    {
+        int *beginLoopIndex=NULL, *endLoopIndex=NULL, jobCount, devCount, devIndex;
+        GeckoLocation **dev = NULL;
+        int ranges_count = 0;
+        float *ranges = NULL;
+        int var_count = 2;
+        void **var_list = (void **) malloc(sizeof(void*) * var_count);
+        for(int __v_id=0; __v_id<var_count; __v_id++) {
+            var_list[__v_id] = m;
+            var_list[__v_id] = b;
+        }
+        GeckoError err = geckoRegion(exec_policy_chosen, exec_loc, 0, Size-1-t, 1, 0, &devCount, &beginLoopIndex, &endLoopIndex, &dev, ranges_count, ranges, var_count, var_list);
+        jobCount = devCount;
+        if(err != GECKO_ERR_TOTAL_ITERATIONS_ZERO) {
+            #pragma omp parallel num_threads(jobCount)
+            {
+                int devIndex = omp_get_thread_num();
+                if(dev[devIndex] != NULL) {
+                    int beginLI = beginLoopIndex[devIndex], endLI = endLoopIndex[devIndex];
+                    int asyncID = dev[devIndex]->getAsyncID();
+#pragma acc parallel loop present(m,b) deviceptr(m,b) async(asyncID) copyin()
+                    for( i = beginLI; i < endLI; i++)
+                        b[i+1+t] -= m[Size*(i+1+t)+t] * b[t];
+#pragma acc wait(asyncID)
+                } // end of if(dev[devIndex]!=NULL)
+            } // end of OpenMP pragma
+        } // end of checking: err != GECKO_ERR_TOTAL_ITERATIONS_ZERO
+        geckoFreeRegionTemp(beginLoopIndex, endLoopIndex, devCount, dev, var_list);
+    }
 }
 
 /*------------------------------------------------------
@@ -226,26 +298,26 @@ void Fan2(float *m, float *a, float *b,int Size, int j1, int t)
  */
 void ForwardSub()
 {
-	int t;
+    int t;
 
 //#pragma acc data copy(m[0:Size*Size],a[0:Size*Size],b[0:Size])
-{
-    // begin timing kernels
-    struct timeval time_start;
-    gettimeofday(&time_start, NULL);
+    {
+        // begin timing kernels
+        struct timeval time_start;
+        gettimeofday(&time_start, NULL);
 
-	for (t=0; t<(Size-1); t++) {
-		Fan1(m,a,Size,t);
-		Fan2(m,a,b,Size,Size-t,t);
-	}
-    
-#pragma gecko region pause at(exec_loc)
+        for (t=0; t<(Size-1); t++) {
+            Fan1(m,a,Size,t);
+            Fan2(m,a,b,Size,Size-t,t);
+        }
 
-	// end timing kernels
-	struct timeval time_end;
-    gettimeofday(&time_end, NULL);
-    totalKernelTime = (time_end.tv_sec * 1000000 + time_end.tv_usec) - (time_start.tv_sec * 1000000 + time_start.tv_usec);
-} /* end acc data */
+        geckoWaitOnLocation(exec_loc);
+
+        // end timing kernels
+        struct timeval time_end;
+        gettimeofday(&time_end, NULL);
+        totalKernelTime = (time_end.tv_sec * 1000000 + time_end.tv_usec) - (time_start.tv_sec * 1000000 + time_start.tv_usec);
+    } /* end acc data */
 
 }
 
@@ -256,29 +328,29 @@ void ForwardSub()
 
 void BackSub()
 {
-	// create a new vector to hold the final answer
-	finalVec = (float *) malloc(Size * sizeof(float));
-	// solve "bottom up"
-	int i,j;
-	for(i=0;i<Size;i++){
-		finalVec[Size-i-1]=b[Size-i-1];
-		for(j=0;j<i;j++)
-		{
-			finalVec[Size-i-1]-=*(a+Size*(Size-i-1)+(Size-j-1)) * finalVec[Size-j-1];
-		}
-		finalVec[Size-i-1]=finalVec[Size-i-1]/ *(a+Size*(Size-i-1)+(Size-i-1));
-	}
+    // create a new vector to hold the final answer
+    finalVec = (float *) malloc(Size * sizeof(float));
+    // solve "bottom up"
+    int i,j;
+    for(i=0; i<Size; i++) {
+        finalVec[Size-i-1]=b[Size-i-1];
+        for(j=0; j<i; j++)
+        {
+            finalVec[Size-i-1]-=*(a+Size*(Size-i-1)+(Size-j-1)) * finalVec[Size-j-1];
+        }
+        finalVec[Size-i-1]=finalVec[Size-i-1]/ *(a+Size*(Size-i-1)+(Size-i-1));
+    }
 }
 
 void InitMat(float *ary, int nrow, int ncol)
 {
-	int i, j;
-	float val;
-	for (i=0; i<nrow; i++) {
-		for (j=0; j<ncol; j++) {
-			fscanf(fp, "%f",  ary+Size*i+j);
-		}
-	}  
+    int i, j;
+    float val;
+    for (i=0; i<nrow; i++) {
+        for (j=0; j<ncol; j++) {
+            fscanf(fp, "%f",  ary+Size*i+j);
+        }
+    }
 }
 
 /*------------------------------------------------------
@@ -287,15 +359,15 @@ void InitMat(float *ary, int nrow, int ncol)
  */
 void PrintMat(float *ary, int nrow, int ncol)
 {
-	int i, j;
-	
-	for (i=0; i<nrow; i++) {
-		for (j=0; j<ncol; j++) {
-			printf("%8.2f ", *(ary+Size*i+j));
-		}
-		printf("\n");
-	}
-	printf("\n");
+    int i, j;
+
+    for (i=0; i<nrow; i++) {
+        for (j=0; j<ncol; j++) {
+            printf("%8.2f ", *(ary+Size*i+j));
+        }
+        printf("\n");
+    }
+    printf("\n");
 }
 
 /*------------------------------------------------------
@@ -305,12 +377,12 @@ void PrintMat(float *ary, int nrow, int ncol)
  */
 void InitAry(float *ary, int ary_size)
 {
-	int i;
-	
-	for (i=0; i<ary_size; i++) {
-		fscanf(fp, "%f",  &ary[i]);
-	}
-}  
+    int i;
+
+    for (i=0; i<ary_size; i++) {
+        fscanf(fp, "%f",  &ary[i]);
+    }
+}
 
 /*------------------------------------------------------
  ** PrintAry() -- Print the contents of the array (vector)
@@ -318,9 +390,9 @@ void InitAry(float *ary, int ary_size)
  */
 void PrintAry(float *ary, int ary_size)
 {
-	int i;
-	for (i=0; i<ary_size; i++) {
-		printf("%.2f ", ary[i]);
-	}
-	printf("\n\n");
+    int i;
+    for (i=0; i<ary_size; i++) {
+        printf("%.2f ", ary[i]);
+    }
+    printf("\n\n");
 }
