@@ -1,7 +1,19 @@
 
 import os,sys,glob
 
-gecko_config_folder_base = "/home/millad/gecko-rodinia/config/"
+def get_name(filename):
+	_v = filename
+	__v = _v[::-1]
+	ind = __v.find("/")
+	s = __v[:ind]
+	return s[::-1]
+
+
+gecko_config_folder_base = "/home/millad/gecko-configs/"
+
+
+config_files = glob.glob(gecko_config_folder_base + "*")
+config_files = sorted(config_files)
 
 cwd = os.getcwd()
 
@@ -22,13 +34,25 @@ for a in zip(app_list, file_list):
 
 	os.chdir(full_path)
 
-	for devcount in [1, 2, 3, 4]:
-		output_filename = "%s-%d-gecko-summit.txt" % (app, devcount)
-
-		os.environ["GECKO_CONFIG_FILE"] = "%s/gecko%d.conf" % (gecko_config_folder_base, devcount)
+	for cfilename in config_files:
+		os.environ["GECKO_CONFIG_FILE"] = cfilename
+		config_name = get_name(cfilename)
+		output_filename = "%s-%s.txt" % (app, config_name)
+		os.environ["GECKO_POLICY"] = "static"
+		if "-p" in config_name:
+			ind = config_name.find("-p")
+			host_share = float(config_name[ind+2:])
+			num_gpus = int(config_name[3:4])
+			gpu_share = 100.0 - host_share
+			gpu_share /= num_gpus
+			policy = "percentage:["
+			for i in range(num_gpus):
+				policy += "%.2f," % (gpu_share)
+			policy += "%.2f]" % (host_share)
+			os.environ["GECKO_POLICY"] = policy
 
 		os.system("rm -f %s" % (output_filename))
 
 		for i in range(iteration_count):
-			os.system("sh run >> %s" % (action))
+			os.system("sh run >> %s" % (output_filename))
 

@@ -20,5 +20,9 @@ for f in file_list:
 		continue
 
 	os.chdir(full_path)
+	if action == "clean":
+		os.system("python ~/gecko/geckoTranslate.py backward ./")
+	else:
+		os.system("python ~/gecko/geckoTranslate.py forward ./")
 	os.system("make %s" % (action))
 

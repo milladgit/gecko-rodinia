@@ -9,7 +9,7 @@ int no_of_nodes;
 int edge_list_size;
 FILE *fp;
 
-static char *exec_loc = "LocA";
+static char *exec_loc = "LocH";
 static char *exec_policy_chosen = "static";
 
 

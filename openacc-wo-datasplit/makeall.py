@@ -3,10 +3,10 @@ import os,sys,glob
 
 cwd = os.getcwd()
 
-folder_list = ["bfs", "cfd", "gaussian", "hotspot", "lavaMD", "lud", "nn", "nw", "particlefilter", "pathfinder", "srad_v2"]
+app_list = ["old-vector_add", "old-stencil", "acc-vector_add", "acc-stencil"]
 
 # file_list = glob.glob("%s/*" % (cwd))
-file_list = ["%s/%s" % (cwd, f) for f in folder_list]
+file_list = ["%s/%s" % (cwd, f) for f in app_list]
 
 action = ""
 
