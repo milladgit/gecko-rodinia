@@ -1,0 +1,22 @@
+#!/bin/bash
+
+### Set the job name
+#SBATCH -J rodinia
+
+#SBATCH -p hsw_v100_32g
+
+### Specify the number of cpus for your job.
+#SBATCH -N 1                 # total number of nodes
+#SBATCH --exclusive
+
+### Tell SLURM the anticipated run-time for your job, (HH:MM:SS)
+##SBATCH -t 48:00:00
+
+
+
+#module load cuda/9.0.176
+module load pgi/18.1
+
+
+python runall.py
+
