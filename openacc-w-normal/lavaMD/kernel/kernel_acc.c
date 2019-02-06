@@ -66,7 +66,7 @@ void  kernel_acc(	par_str par,
 	fp alpha;
 	fp a2;
 
-	int l;
+	//int l;
 
 	time1 = get_time();
 
@@ -90,7 +90,7 @@ void  kernel_acc(	par_str par,
 	//======================================================================================================================================================150
 
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(box,rv,qv,fv) gang vector independent
-	for(l=0; l<dim.number_boxes; l++){
+	for(int l=0; l<dim.number_boxes; l++){
 
 
 		// counters

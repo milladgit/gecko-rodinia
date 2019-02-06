@@ -34,11 +34,11 @@ void single_iteration(double *result, double *temp, double *power, int row, int 
 					  double step)
 {
 	double delta;
-	int r, c;
+//	int r, c;
 
-	#pragma gecko region exec_pol(exec_policy_chosen) variable_list(temp,power,result) independent gang vector collapse(2) private(r,c)
-	for (r = 0; r < row; r++) {
-		for (c = 0; c < col; c++) {
+	#pragma gecko region exec_pol(exec_policy_chosen) variable_list(temp,power,result) independent gang vector
+	for (int r = 0; r < row; r++) {
+		for (int c = 0; c < col; c++) {
   			/*	Corner 1	*/
 			if ( (r == 0) && (c == 0) ) {
 				delta = (step / Cap) * (power[0] +
@@ -104,9 +104,9 @@ void single_iteration(double *result, double *temp, double *power, int row, int 
 	#pragma gecko region end
 
 
-	#pragma gecko region exec_pol(exec_policy_chosen) variable_list(temp,power,result) independent gang vector collapse(2) private(r,c)
-	for (r = 0; r < row; r++) {
-		for (c = 0; c < col; c++) {
+	#pragma gecko region exec_pol(exec_policy_chosen) variable_list(temp,power,result) independent gang vector
+	for (int r = 0; r < row; r++) {
+		for (int c = 0; c < col; c++) {
 			temp[r*col+c]=result[r*col+c];
 		}
 	}
