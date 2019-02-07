@@ -128,13 +128,16 @@ void strelDisk(int * disk, int radius)
 {
 	int diameter = radius*2 - 1;
 	int x, y;
-	for(x = 0; x < diameter; x++){
-		for(y = 0; y < diameter; y++){
+	#pragma gecko region exec_pol(exec_policy_chosen) variable_list(disk) gang vector
+	for(int x = 0; x < diameter; x++){
+		for(int y = 0; y < diameter; y++){
 			double distance = sqrt(pow((double)(x-radius+1),2) + pow((double)(y-radius+1),2));
 			if(distance < radius)
-			disk[x*diameter + y] = 1;
+				disk[x*diameter + y] = 1;
 		}
 	}
+	#pragma gecko region end
+	#pragma gecko region pause at("LocA")
 }
 /**
 * Dilates the provided video
@@ -183,15 +186,17 @@ void dilate_matrix(int * matrix, int posX, int posY, int posZ, int dimX, int dim
 void imdilate_disk(int * matrix, int dimX, int dimY, int dimZ, int error, int * newMatrix)
 {
 	int x, y, z;
-	for(z = 0; z < dimZ; z++){
-		for(x = 0; x < dimX; x++){
-			for(y = 0; y < dimY; y++){
+	#pragma gecko region exec_pol(exec_policy_chosen) variable_list(matrix,newMatrix) gang vector
+	for(int z = 0; z < dimZ; z++){
+		for(int x = 0; x < dimX; x++){
+			for(int y = 0; y < dimY; y++){
 				if(matrix[x*dimY*dimZ + y*dimZ + z] == 1){
 					dilate_matrix(newMatrix, x, y, z, dimX, dimY, dimZ, error);
 				}
 			}
 		}
 	}
+	#pragma gecko region end
 }
 /**
 * Fills a 2D array describing the offsets of the disk object
@@ -201,12 +206,14 @@ void imdilate_disk(int * matrix, int dimX, int dimY, int dimZ, int error, int * 
 * @param radius The radius used for dilation
 */
 void getneighbors(int * se, int numOnes, double *neighbors, int radius){
-	int x, y;
+	// int x, y;
 	int neighY = 0;
 	int center = radius - 1;
 	int diameter = radius*2 -1;
-	for(x = 0; x < diameter; x++){
-		for(y = 0; y < diameter; y++){
+	#pragma gecko region exec_pol("any") variable_list(se,neighbors) gang(1) 
+	for(int x = 0; x < diameter; x++){
+		#pragma acc loop vector
+		for(int y = 0; y < diameter; y++){
 			if(se[x*diameter + y]){
 				neighbors[neighY*2] = (int)(y - center);
 				neighbors[neighY*2 + 1] = (int)(x - center);
@@ -214,6 +221,8 @@ void getneighbors(int * se, int numOnes, double *neighbors, int radius){
 			}
 		}
 	}
+	#pragma gecko region end
+	#pragma gecko region pause at("LocA")
 }
 /**
 * The synthetic video sequence we will work with here is composed of a
@@ -249,16 +258,18 @@ void videoSequence(int * I, int IszX, int IszY, int Nfr, int * seed){
 	/*dilate matrix*/
 //	int * newMatrix = (int *)malloc(sizeof(int)*IszX*IszY*Nfr);
 	int *newMatrix;
-#pragma gecko memory allocate(newMatrix[0:IszX*IszY*Nfr]) type(int) location(exec_loc)
+	#pragma gecko memory allocate(newMatrix[0:IszX*IszY*Nfr]) type(int) location(exec_loc)
 	imdilate_disk(I, IszX, IszY, Nfr, 5, newMatrix);
 	int x, y;
-	for(x = 0; x < IszX; x++){
-		for(y = 0; y < IszY; y++){
-			for(k = 0; k < Nfr; k++){
+	#pragma gecko region exec_pol(exec_policy_chosen) variable_list(I,newMatrix) gang vector
+	for(int x = 0; x < IszX; x++){
+		for(int y = 0; y < IszY; y++){
+			for(int k = 0; k < Nfr; k++){
 				I[x*IszY*Nfr + y*Nfr + k] = newMatrix[x*IszY*Nfr + y*Nfr + k];
 			}
 		}
 	}
+	#pragma gecko region end
 //	free(newMatrix);
 	#pragma gecko memory free(newMatrix)
 	
@@ -371,12 +382,15 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 	strelDisk(disk, radius);
 	int countOnes = 0;
 	int x, y;
-	for(x = 0; x < diameter; x++){
-		for(y = 0; y < diameter; y++){
+	#pragma gecko region exec_pol(exec_policy_chosen) variable_list(disk) reduction(+:countOnes)
+	for(int x = 0; x < diameter; x++){
+		for(int y = 0; y < diameter; y++){
 			if(disk[x*diameter + y] == 1)
 				countOnes++;
 		}
 	}
+	#pragma gecko region end
+	#pragma gecko region pause at("LocA")
 	double *objxy;
 //	objxy = (double *)malloc(countOnes*2*sizeof(double));
 #pragma gecko memory allocate(objxy[0:countOnes*2]) type(double) location(exec_loc)
@@ -415,7 +429,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 	printf("TIME TO GET NEIGHBORS TOOK: %f\n", elapsed_time(start, get_neighbors));
 	//initial weights are all equal (1/Nparticles)
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(weights) independent gang vector
-	for(x = 0; x < Nparticles; x++){
+	for(int x = 0; x < Nparticles; x++){
 		weights[x] = 1/((double)(Nparticles));
 	}
 #pragma gecko region end
@@ -451,14 +465,14 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		printf("TIME TO SET ERROR TOOK: %f\n", elapsed_time(set_arrays, error));
 		//particle filter likelihood
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(likelihood,arrayX,arrayY,ind,objxy,I) gang
-		for(x = 0; x < Nparticles; x++){
+		for(int x = 0; x < Nparticles; x++){
 			//compute the likelihood: remember our assumption is that you know
 			// foreground and the background image intensity distribution.
 			// Notice that we consider here a likelihood ratio, instead of
 			// p(z|x). It is possible in this case. why? a hometask for you.		
 			//calc ind
 			#pragma acc loop vector
-			for(y = 0; y < countOnes; y++){
+			for(int y = 0; y < countOnes; y++){
 				indX = roundDouble(arrayX[x]) + objxy[y*2 + 1];
 				indY = roundDouble(arrayY[x]) + objxy[y*2];
 				ind[x*countOnes + y] = fabs(indX*IszY*Nfr + indY*Nfr + k);
@@ -468,7 +482,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 			likelihood[x] = 0;
 			// TODO: change to reduction
 			#pragma acc loop vector
-			for(y = 0; y < countOnes; y++)
+			for(int y = 0; y < countOnes; y++)
 				likelihood[x] += (pow((I[ind[x*countOnes + y]] - 100),2) - pow((I[ind[x*countOnes + y]]-228),2))/50.0;
 			likelihood[x] = likelihood[x]/((double) countOnes);
 		}
@@ -479,7 +493,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		// update & normalize weights
 		// using equation (63) of Arulampalam Tutorial
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(weights,likelihood) independent gang vector
-		for(x = 0; x < Nparticles; x++){
+		for(int x = 0; x < Nparticles; x++){
 			weights[x] = weights[x] * exp(likelihood[x]);
 		}
 #pragma gecko region end
@@ -487,7 +501,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		printf("TIME TO GET EXP TOOK: %f\n", elapsed_time(likelihood_time, exponential));
 		double sumWeights = 0;
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(weights) independent gang vector reduction(+:sumWeights)
-		for(x = 0; x < Nparticles; x++){
+		for(int x = 0; x < Nparticles; x++){
 			sumWeights += weights[x];
 		}
 #pragma gecko region end
@@ -495,7 +509,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		long long sum_time = get_time();
 		printf("TIME TO SUM WEIGHTS TOOK: %f\n", elapsed_time(exponential, sum_time));
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(weights) independent gang vector
-		for(x = 0; x < Nparticles; x++){
+		for(int x = 0; x < Nparticles; x++){
 			weights[x] = weights[x]/sumWeights;
 		}
 #pragma gecko region end
@@ -505,7 +519,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		ye = 0;
 		// estimate the object location by expected values
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(weights,arrayX,arrayY) independent gang vector reduction(+:xe, ye) 
-		for(x = 0; x < Nparticles; x++){
+		for(int x = 0; x < Nparticles; x++){
 			double weight = weights[x];
 			xe += arrayX[x] * weight;
 			ye += arrayY[x] * weight;
@@ -528,10 +542,18 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		
 //		#pragma acc update host(weights[0:Nparticles])
 
-		CDF[0] = weights[0];
-		for(x = 1; x < Nparticles; x++){
-			CDF[x] = weights[x] + CDF[x-1];
+
+// Gecko implementation: dummy for-loop to conform with Gecko's requirements
+#pragma gecko region exec_pol(exec_policy_chosen) variable_list(CDF,weights) gang(1) vector(1)
+		for(int q=0;q<1;q++)
+		{
+			CDF[0] = weights[0];
+			for(int x = 1; x < Nparticles; x++){
+				CDF[x] = weights[x] + CDF[x-1];
+			}
 		}
+#pragma gecko region end
+
 
 //		#pragma acc update device(CDF[0:Nparticles]) async(UPDATE_TARGET_CDF)
 
@@ -539,7 +561,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		printf("TIME TO CALC CUM SUM TOOK: %f\n", elapsed_time(move_time, cum_sum));
 		double u1 = (1/((double)(Nparticles)))*randu(seed, 0);
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(u) independent gang vector
-		for(x = 0; x < Nparticles; x++){
+		for(int x = 0; x < Nparticles; x++){
 			u[x] = u1 + x/((double)(Nparticles));
 		}
 #pragma gecko region end
@@ -550,7 +572,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 //		#pragma acc wait(UPDATE_TARGET_CDF)
 
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(xj,yj,arrayX,arrayY,CDF,u) independent gang vector
-		for(j = 0; j < Nparticles; j++){
+		for(int j = 0; j < Nparticles; j++){
 			int i;
 			FIND_INDEX(i, CDF, Nparticles, u[j]);
 			if(i < 0 || i >= Nparticles)
@@ -564,7 +586,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 		printf("TIME TO CALC NEW ARRAY X AND Y TOOK: %f\n", elapsed_time(u_time, xyj_time));
 		//reassign arrayX and arrayY
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(xj,yj,arrayX,arrayY,weights) independent gang vector
-		for(x = 0; x < Nparticles; x++){
+		for(int x = 0; x < Nparticles; x++){
 			//reassign arrayX and arrayY
 			arrayX[x] = xj[x];
 			arrayY[x] = yj[x];

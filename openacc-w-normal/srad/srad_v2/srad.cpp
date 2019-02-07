@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
 #pragma gecko region pause at(exec_loc)
 
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(I,J) independent gang vector
-    for (k = 0;  k < size_I; k++ ) {
+    for (int k = 0;  k < size_I; k++ ) {
      	J[k] = (float)exp(I[k]) ;
     }
 #pragma gecko region end
@@ -160,8 +160,8 @@ int main(int argc, char* argv[])
 #endif
 		sum=0; sum2=0;
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(I,J) independent gang vector collapse(2) reduction(+:sum,sum2)
-		for (i=r1; i<=r2; i++) {
-            for (j=c1; j<=c2; j++) {
+		for (int i=r1; i<=r2; i++) {
+            for (int j=c1; j<=c2; j++) {
                 tmp   = J[i * cols + j];
                 sum  += tmp ;
                 sum2 += tmp*tmp;

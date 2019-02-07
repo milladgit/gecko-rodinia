@@ -11,10 +11,10 @@ void lud_openacc(float *a, int size)
      for (i=0; i <size; i++){
 
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(a) independent gang vector
-         for (j=i; j <size; j++){
+         for (int j=i; j <size; j++){
              sum=a[i*size+j];
              #pragma acc loop seq
-             for (k=0; k<i; k++) sum -= a[i*size+k]*a[k*size+j];
+             for (int k=0; k<i; k++) sum -= a[i*size+k]*a[k*size+j];
              a[i*size+j]=sum;
          }
 #pragma gecko region end
@@ -24,10 +24,10 @@ void lud_openacc(float *a, int size)
 
 	     
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(a) independent gang vector
-         for (j=i+1;j<size; j++){
+         for (int j=i+1;j<size; j++){
              sum=a[j*size+i];
              #pragma acc loop seq
-             for (k=0; k<i; k++) sum -=a[j*size+k]*a[k*size+i];
+             for (int k=0; k<i; k++) sum -=a[j*size+k]*a[k*size+i];
              a[j*size+i]=sum/a[i*size+i];
          }
 #pragma gecko region end

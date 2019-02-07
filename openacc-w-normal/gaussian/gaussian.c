@@ -201,11 +201,11 @@ void Fan1(float *m, float *a, int Size, int t)
 
 void Fan2(float *m, float *a, float *b,int Size, int j1, int t)
 {
-	int i,j;
+	// int i,j;
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(a,m) independent gang 
-	for (i=0; i<Size-1-t; i++) {
+	for (int i=0; i<Size-1-t; i++) {
 		#pragma acc loop vector independent
-		for (j=0; j<Size-t; j++)
+		for (int j=0; j<Size-t; j++)
 			a[Size*(i+1+t)+(j+t)] -= m[Size*(i+1+t)+t] * a[Size*t+(j+t)];
 	}
 #pragma gecko region end
@@ -213,7 +213,7 @@ void Fan2(float *m, float *a, float *b,int Size, int j1, int t)
 //#pragma gecko region pause at(exec_loc)
 
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(a,m,b) independent gang vector 
-	for (i=0; i<Size-1-t; i++)
+	for (int i=0; i<Size-1-t; i++)
 		b[i+1+t] -= m[Size*(i+1+t)+t] * b[t];
 #pragma gecko region end
 

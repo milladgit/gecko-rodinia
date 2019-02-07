@@ -110,7 +110,7 @@ int main(int argc, char* argv[])
 //    #pragma acc kernels copyin(locations[0:numRecords]) copyout(distances[0:numRecords])
 //#pragma gecko region at(exec_loc) exec_pol(exec_policy_chosen) variable_list(distances,locations)
 #pragma gecko region exec_pol(exec_policy_chosen) variable_list(distances,locations) independent gang vector
-	for (i=0; i<numRecords; i++) {
+	for (int i=0; i<numRecords; i++) {
       LatLong latlong = locations[i];
       distances[i] = (float)sqrt((lat-latlong.lat)*(lat-latlong.lat)+(lng-latlong.lng)*(lng-latlong.lng));
     }
