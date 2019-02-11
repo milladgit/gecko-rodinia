@@ -197,6 +197,7 @@ void imdilate_disk(int * matrix, int dimX, int dimY, int dimZ, int error, int * 
 		}
 	}
 	#pragma gecko region end
+        #pragma gecko region pause at("LocA")
 }
 /**
 * Fills a 2D array describing the offsets of the disk object
@@ -212,7 +213,7 @@ void getneighbors(int * se, int numOnes, double *neighbors, int radius){
 	int diameter = radius*2 -1;
 	#pragma gecko region exec_pol("any") variable_list(se,neighbors) gang(1) 
 	for(int x = 0; x < diameter; x++){
-		#pragma acc loop vector
+		#pragma acc loop 
 		for(int y = 0; y < diameter; y++){
 			if(se[x*diameter + y]){
 				neighbors[neighY*2] = (int)(y - center);
@@ -406,6 +407,7 @@ void particleFilter(int * I, int IszX, int IszY, int Nfr, int * seed, int Nparti
 //	xj = (double *)malloc(sizeof(double)*Nparticles);
 //	yj = (double *)malloc(sizeof(double)*Nparticles);
 //	weights = (double *)malloc(sizeof(double)*Nparticles);
+
 
 #pragma gecko memory allocate(ind[0:countOnes*Nparticles]) type(int) location(exec_loc)
 #pragma gecko memory allocate(likelihood[0:Nparticles]) type(double) location(exec_loc)
