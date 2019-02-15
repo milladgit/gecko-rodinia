@@ -1,0 +1,15 @@
+Start computing the transient temperature
+Total time: 4904.03us
+Ending simulation
+Start computing the transient temperature
+Total time: 4837.99us
+Ending simulation
+Start computing the transient temperature
+Total time: 5611.18us
+Ending simulation
+Start computing the transient temperature
+Total time: 4801.99us
+Ending simulation
+Start computing the transient temperature
+Total time: 5239.96us
+Ending simulation

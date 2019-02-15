@@ -1,0 +1,20 @@
+Start Needleman-Wunsch
+Processing top-left matrix
+Processing bottom-right matrix
+Total time: 3837657.21us
+Start Needleman-Wunsch
+Processing top-left matrix
+Processing bottom-right matrix
+Total time: 3800688.03us
+Start Needleman-Wunsch
+Processing top-left matrix
+Processing bottom-right matrix
+Total time: 3985894.92us
+Start Needleman-Wunsch
+Processing top-left matrix
+Processing bottom-right matrix
+Total time: 4585757.02us
+Start Needleman-Wunsch
+Processing top-left matrix
+Processing bottom-right matrix
+Total time: 4172436.95us
