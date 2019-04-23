@@ -1,0 +1,10 @@
+Reading matrix from file ../../data/lud/2048.dat
+Time consumed(ms): 346.473000
+Reading matrix from file ../../data/lud/2048.dat
+Time consumed(ms): 332.188000
+Reading matrix from file ../../data/lud/2048.dat
+Time consumed(ms): 331.102000
+Reading matrix from file ../../data/lud/2048.dat
+Time consumed(ms): 329.494000
+Reading matrix from file ../../data/lud/2048.dat
+Time consumed(ms): 330.937000

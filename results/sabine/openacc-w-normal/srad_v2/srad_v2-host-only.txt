@@ -1,0 +1,25 @@
+Randomizing the input matrix
+Start the SRAD main loop
+Main Loop Time: 6667531.01us
+Total Time: 8599692.82us
+Computation Done
+Randomizing the input matrix
+Start the SRAD main loop
+Main Loop Time: 2436426.16us
+Total Time: 4365644.93us
+Computation Done
+Randomizing the input matrix
+Start the SRAD main loop
+Main Loop Time: 8282551.05us
+Total Time: 10159501.79us
+Computation Done
+Randomizing the input matrix
+Start the SRAD main loop
+Main Loop Time: 2527248.86us
+Total Time: 4450111.15us
+Computation Done
+Randomizing the input matrix
+Start the SRAD main loop
+Main Loop Time: 9175868.99us
+Total Time: 11182545.90us
+Computation Done

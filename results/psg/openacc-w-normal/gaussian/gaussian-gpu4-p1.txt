@@ -1,0 +1,15 @@
+
+Time total (including memory transfers)	28.974745 sec
+Time for kernels:	28.974744 sec
+
+Time total (including memory transfers)	29.487917 sec
+Time for kernels:	29.487917 sec
+
+Time total (including memory transfers)	29.365433 sec
+Time for kernels:	29.365433 sec
+
+Time total (including memory transfers)	28.808298 sec
+Time for kernels:	28.808298 sec
+
+Time total (including memory transfers)	29.284271 sec
+Time for kernels:	29.284271 sec

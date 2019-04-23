@@ -1,0 +1,15 @@
+
+subplot: 1,2
+
+#figsize: 12,4
+figsize: 12,5
+
+output_filename: rodinia_results.pdf
+
+tight_layout: on
+
+show_plot: on
+
+plot: 0, psg.plotter
+plot: 1, sabine.plotter
+
