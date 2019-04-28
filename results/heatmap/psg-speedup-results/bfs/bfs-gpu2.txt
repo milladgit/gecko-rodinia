@@ -1,0 +1,25 @@
+Reading File
+Start traversing the tree
+Total time for computation: 321551.08
+Result stored in result.txt
+Total time: 3479801.89us
+Reading File
+Start traversing the tree
+Total time for computation: 407229.90
+Result stored in result.txt
+Total time: 3368242.03us
+Reading File
+Start traversing the tree
+Total time for computation: 416393.04
+Result stored in result.txt
+Total time: 3386044.03us
+Reading File
+Start traversing the tree
+Total time for computation: 392429.11
+Result stored in result.txt
+Total time: 3423527.00us
+Reading File
+Start traversing the tree
+Total time for computation: 719694.14
+Result stored in result.txt
+Total time: 3678874.02us

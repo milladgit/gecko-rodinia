@@ -1,0 +1,60 @@
+
+type: barplot
+
+
+#background_color: #CCCCCC
+#background_color: #DDDDDD
+
+bar_count: 2
+
+width: 1
+
+title: Sabine
+
+#colors: SkyBlue, IndianRed
+#colors: black,
+
+labels: Gecko(e)-K=1,Gecko(e)-K=2
+
+ylabel: Speedup w.r.t. one single GPU
+
+xticks_rotation: 90
+#xticks_label_show: off
+
+hline: 1,black,-,1
+
+legend: off
+
+#put_label_on_top: on
+
+
+datatype: float
+
+index_begin: 0.0
+index_step: 9
+
+ylim: 0, 2
+
+#annotate: text; (xy_coord); (xytext_coord); arrowprops_facecolor, arrowprops_shrink, arrowprops_arrowstyle, arrowprops_connectionstyle
+#annotate: 9.38; (116,4); (100,3.6); black, , ->, arc3
+#annotate: 4.28; (9,4); (15,3.6); black, , ->, arc3
+
+
+#xticks_label: CUDA, kokkos, RAJA, OpenACC, Gecko w/ b, Gecko w/ c, Gecko w/ d, Gecko w/ e, Gecko w/ f, Gecko w/ g, Gecko w/ BW, Gecko w/ Percentage (0.02), Gecko w/ Percentage (0.02), Gecko w/ Percentage (0.04)
+#data_0: 815.315, 817.537, 815.934, 792.491, 788.747, 789.046, 793.371, 1445.294, 1763.016, 1883.930, 1650.087, 1969.686, 1917.487, 1551.732
+
+
+#datatable: <num_of_data_columns>
+#Gecko(a),Gecko(e)-K=1,Gecko(e)-K=2,Gecko(e)-K=3,Gecko(e)-K=4,Gecko(f)-K=4-HS=0.5%,Gecko(f)-K=4-HS=1%,Gecko(f)-K=4-HS=2%
+datatable: 2
+bfs; 1.0; 0.672148450038;
+cfd; 1.0; 1.65153026502;
+gaussian; 1.0; 0.277272551312;
+hotspot; 1.0; 0.515531619704;
+lavaMD; 1.0; 1.70180383512;
+lud; 1.0; 0.0477625327471;
+nn; 1.0; 0.0256577450958;
+nw; 1.0; 0.179526103495;
+particlefilter; 1.0; 0.846343387993;
+pathfinder; 1.0; 0.158762183466;
+srad_v2; 1.0; 1.55402063385;

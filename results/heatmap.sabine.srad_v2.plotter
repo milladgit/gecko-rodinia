@@ -1,0 +1,47 @@
+
+type: heatmapplot
+
+title: Sabine - Heterogeneous Exe.
+
+background_color: #CCCCCC
+
+#colors: SkyBlue, IndianRed
+colors: black
+
+#labels: Bandwidth
+
+xlabel: Num. of GPUs
+ylabel: Host Contribution (HC)
+
+#xticks_rotation: 90
+
+legend: off
+
+grid: off
+
+datatype: float
+
+xticks_label_fontsize: 8
+yticks_label_fontsize: 8
+colorbar_label: Execution Time (s)
+colormap: RdYlGn_r
+show_values_in_box: off
+show_values_in_box_font: 8
+
+
+#xticks_label: cucumber, tomato, lettuce, asparagus, potato, wheat, barley
+#yticks_label: Farmer Joe, Upland Bros., Smith Gardening, Agrifun, Organiculture, BioGoods Ltd., Cornylee Corp.
+
+
+data:
+columns:  1 , 2
+90.00: 12.64, 8.48
+80.00: 22.76, 13.79
+70.00: 31.98, 20.00
+60.00: 41.51, 26.79
+50.00: 50.60, 32.87
+40.00: 60.46, 39.17
+30.00: 70.11, 45.29
+20.00: 79.36, 50.69
+10.00: 88.96, 56.62
+

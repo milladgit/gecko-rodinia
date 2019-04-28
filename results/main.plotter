@@ -1,0 +1,21 @@
+
+subplot: 2,3
+
+#figsize: 12,4
+#figsize: 12,5
+figsize: 8,5
+
+#output_filename: rodinia_results.pdf
+
+tight_layout: on
+
+show_plot: on
+
+plot: 0, speedup.psg.plotter
+plot: 1, heatmap.psg.cfd.plotter
+plot: 2, heatmap.psg.srad_v2.plotter
+
+
+plot: 3, speedup.sabine.plotter
+plot: 4, heatmap.sabine.cfd.plotter
+plot: 5, heatmap.sabine.srad_v2.plotter
