@@ -16,7 +16,7 @@ title: Sabine
 
 labels: Gecko(a),Gecko(e)-K=1,Gecko(e)-K=2,Gecko(e)-K=3,Gecko(e)-K=4,Gecko(f)-K=4-HS=0.5%,Gecko(f)-K=4-HS=1%,Gecko(f)-K=4-HS=2%
 
-#ylabel: Bandwidth (GB/s)
+ylabel: Speedup w.r.t. one single GPU
 
 xticks_rotation: 90
 #xticks_label_show: off
@@ -31,7 +31,7 @@ legend: on
 datatype: float
 
 index_begin: 0.0
-index_step: 12
+index_step: 9
 
 ylim: 0, 4
 

@@ -19,7 +19,7 @@ labels: Gecko(a),Gecko(e)-K=1,Gecko(e)-K=2,Gecko(e)-K=3,Gecko(e)-K=4,Gecko(f)-K=
 ylabel: Speedup w.r.t. one single GPU
 
 xticks_rotation: 90
-#xticks_label_show: off
+xticks_label_show: off
 
 hline: 1,black,-,1
 
@@ -31,7 +31,7 @@ put_label_on_top: off
 datatype: float
 
 index_begin: 0.0
-index_step: 12
+index_step: 9
 
 ylim: 0, 4
 

@@ -1,0 +1,25 @@
+
+subplot: 1,2
+
+#figsize: 12,4
+#figsize: 12,5
+#figsize: 8,8
+figsize: 8,6
+#figsize: 9,6
+
+#subplots_adjust_wspace: 0.6
+#subplots_adjust_hspace: 0.4
+#subplots_adjust_bottom: 0.07
+#subplots_adjust_top: 0.95
+#subplots_adjust_left: 0.07
+#subplots_adjust_right: 0.95
+
+output_filename: heatmap_results.pdf
+
+tight_layout: on
+
+show_plot: on
+
+plot: 0, heatmap-cfd.plotter
+plot: 1, heatmap-srad_v2.plotter
+

@@ -1,0 +1,47 @@
+
+type: heatmapplot
+
+title: srad_v2
+
+background_color: #CCCCCC
+
+#colors: SkyBlue, IndianRed
+colors: black
+
+labels: Bandwidth
+
+xlabel: Num. of GPUs
+ylabel: Host Contribution (HC)
+
+#xticks_rotation: 90
+
+legend: off
+
+grid: off
+
+datatype: float
+
+xticks_label_fontsize: 8
+yticks_label_fontsize: 8
+colorbar_label: Execution Time (s)
+colormap: RdYlGn_r
+show_values_in_box: off
+show_values_in_box_font: 8
+
+
+#xticks_label: cucumber, tomato, lettuce, asparagus, potato, wheat, barley
+#yticks_label: Farmer Joe, Upland Bros., Smith Gardening, Agrifun, Organiculture, BioGoods Ltd., Cornylee Corp.
+
+
+data:
+columns:  1 , 2 , 3 , 4
+90: 16.29, 13.31, 5.12, 6.37
+80: 24.20, 16.00, 8.73, 11.12
+70: 35.66, 20.92, 13.71, 12.25
+60: 42.46, 24.45, 18.15, 12.79
+50: 50.72, 29.15, 19.57, 16.45
+40: 60.46, 34.20, 23.21, 18.11
+30: 69.40, 37.82, 26.61, 20.19
+20: 76.75, 43.02, 29.56, 22.58
+10: 86.74, 46.97, 32.89, 25.06
+

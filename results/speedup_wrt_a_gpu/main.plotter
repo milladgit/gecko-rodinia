@@ -1,8 +1,9 @@
 
-subplot: 1,2
+subplot: 2,1
 
 #figsize: 12,4
-figsize: 12,5
+#figsize: 12,5
+figsize: 8,8
 
 output_filename: rodinia_results.pdf
 
