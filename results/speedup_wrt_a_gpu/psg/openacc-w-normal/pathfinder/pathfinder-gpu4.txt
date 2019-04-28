@@ -1,5 +1,0 @@
-timer: 764121us
-timer: 755855us
-timer: 768993us
-timer: 747763us
-timer: 733832us
