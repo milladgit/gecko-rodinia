@@ -1,7 +1,7 @@
 
 type: heatmapplot
 
-title: Sabine - Heterogeneous Exe.
+title: srad_v2 on Sabine
 
 background_color: #CCCCCC
 
@@ -44,4 +44,4 @@ columns:  1 , 2
 30.00: 70.11, 45.29
 20.00: 79.36, 50.69
 10.00: 88.96, 56.62
-
+00.00: 97.45, 62.71

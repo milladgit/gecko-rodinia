@@ -51,6 +51,7 @@ for app in app_list:
 			results_out.append(0)
 		else:
 			results_out.append(v0/_v)
+			results_out.append(_v)
 	results = results_out
 
 

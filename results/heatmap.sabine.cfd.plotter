@@ -1,7 +1,7 @@
 
 type: heatmapplot
 
-title: Sabine - Heterogeneous Exe.
+title: cfd on Sabine
 
 background_color: #CCCCCC
 
@@ -44,4 +44,4 @@ columns:  1 , 2
 30.00: 179795.60, 113228.20
 20.00: 193372.60, 144907.40
 10.00: 208226.80, 160850.20
-
+00.00: 198019.8, 119900.8

@@ -13,17 +13,20 @@ title: Sabine
 
 #colors: SkyBlue, IndianRed
 #colors: black,
+#colors: darkblue, blue, slateblue,blueviolet
+colors: darkblue,blueviolet
 
 labels: Gecko(e)-K=1,Gecko(e)-K=2
 
-ylabel: Speedup w.r.t. one single GPU
 
-xticks_rotation: 90
+ylabel: Speedup 
+
+xticks_rotation: 45
 #xticks_label_show: off
 
 hline: 1,black,-,1
 
-legend: off
+legend: on
 
 #put_label_on_top: on
 
@@ -31,7 +34,11 @@ legend: off
 datatype: float
 
 index_begin: 0.0
-index_step: 9
+index_step: 3
+
+grid: on
+grid_which: both
+
 
 ylim: 0, 2
 
