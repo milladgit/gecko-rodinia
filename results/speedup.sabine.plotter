@@ -11,10 +11,8 @@ width: 1
 
 title: Sabine
 
-#colors: SkyBlue, IndianRed
-#colors: black,
-#colors: darkblue, blue, slateblue,blueviolet
-colors: darkblue,blueviolet
+colors: darkblue, blue, slateblue,blueviolet
+#colors: darkblue,blueviolet
 
 labels: Gecko(e)-K=1,Gecko(e)-K=2
 
@@ -26,7 +24,7 @@ xticks_rotation: 45
 
 hline: 1,black,-,1
 
-legend: on
+legend: off
 
 #put_label_on_top: on
 

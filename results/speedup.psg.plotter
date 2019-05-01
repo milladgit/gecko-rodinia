@@ -11,8 +11,6 @@ width: 1
 
 title: PSG
 
-#colors: SkyBlue, IndianRed
-#colors: black,
 colors: darkblue, blue, slateblue,blueviolet
 
 labels: Gecko(e)-K=1,Gecko(e)-K=2,Gecko(e)-K=3,Gecko(e)-K=4
