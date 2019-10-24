@@ -1,5 +1,5 @@
-Rodinia Benchmark Suite 2.1
-===========================
+Rodinia Benchmark Suite 2.2 - With Gecko Directives 
+===================================================
 
 I. Overview
 
@@ -10,19 +10,35 @@ II. Usage
 
 1. Pakage Structure
 
-rodinia_2.1/bin		: binary executables
-rodinia_2.1/common	: common configuration file
-rodinia_2.1/cuda	: source code for the CUDA implementations
-rodinia_2.1/data	: input files
-rodinia_2.1/openacc : source code for the OpenACC implementations
-rodinia_2.1/openmp	: source code for the OpenMP implementations
-rodinia_2.1/opencl	: source code for the OpenCL implementations
+rodinia_2.x/bin		: binary executables
+rodinia_2.x/common	: common configuration file
+rodinia_2.x/cuda	: source code for the CUDA implementations
+rodinia_2.x/data	: input files
+rodinia_2.x/openmp	: source code for the OpenMP implementations
+rodinia_2.x/opencl	: source code for the OpenCL implementations
+rodinia_2.x/gecko	: source code for the Gecko implementations
 
 2. Build Rodinia
 
-Install the CUDA/OCL drivers, SDK and toolkit on your machine. 
+Install the CUDA drivers, SDK and toolkit on your machine. 
 
-Modify the rodinia_2.1/common/make.config file to change the settings of rodinia home directory and CUDA/OCL library paths.
+Install the latest PGI compiler.
+
+Install the directive-based implementation of Gecko from following URL:
+https://github.com/milladgit/rodinia
+
+
+In order to save space, the "data" folder was not cloned from the original repository. 
+As a result, to have the "data" folder, please clone the original Rodinia repository for their "data" folder. 
+The current "data" folder in this project is a handler for "../rodinia/data". So, the original Rodinia folder should be accessible from the parent folder. 
+
+The original repository is available in following URLs:
+https://github.com/qbunia/rodinia
+https://github.com/pathscale/rodinia
+https://github.com/milladgit/rodinia
+
+
+Modify the rodinia_2.x/common/make.config file to change the settings of rodinia home directory and CUDA/OCL library paths.
 
 To compile all the programs of the Rodinia benchmark suite, simply use the universal make file to compile all the programs, or go to each 
 benchmark directory and make individual programs. 
@@ -32,6 +48,9 @@ benchmark directory and make individual programs.
 There is a 'run' file specifying the sample command to run each program.
 
 IV. Change Log
+Oct. 24, 2019: Gecko-Rodinia (Millad Ghane)
+        - The implementation of Rodinia with Gecko's Directives
+
 Oct. 09, 2012: Rodinia 2.2 is released
         - BFS: Delete invalid flag CL_MEM_USE_HOST_PTR from _clMallocRW and _clMalloc functions in opencl verion. Thanks Alexey Kravets (CARP European research project).
         - Hotspot: hotspot_kernel.cl:61 correct the index calculation as grid_cols *loadYidx + loadXidx. Correct the same problem in hotspot.cu:152. Thanks Alexey Kravets.
@@ -55,8 +74,10 @@ Mar 01, 2010: Rodinia 1.0 is released
 
 III. Contact
 
-Shuai Che: sc5nf@cs.virginia.edu
-Kevin Skadron: skadron@cs.virginia.edu
+Millad Ghane (mghane2@uh.edu)
+Sunita Chandrasekaran (schandra@udel.edu)
+Margaret S. Cheung (mscheung@central.uh.edu)
+
 
 Rodinia wiki: 
 
