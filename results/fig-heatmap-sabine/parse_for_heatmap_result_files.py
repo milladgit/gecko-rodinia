@@ -65,4 +65,6 @@ def get_results_for_app(app, coeff=1.0):
 
 get_results_for_app("cfd")
 get_results_for_app("srad_v2", 1e-6) # srad results are in ns scale
+get_results_for_app("lavaMD") 
+
 
